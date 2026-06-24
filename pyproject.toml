@@ -10,6 +10,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pyomo>=6.10.1",
     "python-dotenv>=1.2.2",
+    "uvicorn>=0.34.0",
 ]
 
 [dependency-groups]
