@@ -35,6 +35,7 @@ def dispatch_customer(payload: LiveCustomerInput):
     """
     ts = payload.to_timeseries()
     result = run_single_customer_dispatch(payload.customer_id, ts)
+    print(result)
     return result
 
 @app.post("/dispatch/batch")
