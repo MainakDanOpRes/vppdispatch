@@ -22,6 +22,7 @@ def root():
 
 
 @app.get("/dispatch")
+@app.post("/dispatch")
 def dispatch_customer(payload: LiveCustomerInput):
     """
     Run a single-customer optimisation.
