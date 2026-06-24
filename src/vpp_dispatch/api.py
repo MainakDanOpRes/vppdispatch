@@ -1,6 +1,7 @@
 
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from vpp_dispatch.models.schemas import LiveCustomerInput, BatchDispatchInput
 from vpp_dispatch.services.dispatch_service import run_single_customer_dispatch
 import logging
@@ -10,6 +11,13 @@ app = FastAPI(
     title="VPP Dispatch API",
     description="Real-time optimisation API for Virtual Power Plant dispatch.",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
 
