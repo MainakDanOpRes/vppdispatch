@@ -27,4 +27,5 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-CMD ["uvicorn", "vpp_dispatch.api:app", "--host", "0.0.0.0", "--port", "8000"]
+# Change the CMD line to this:
+CMD ["sh", "-c", "uvicorn vpp_dispatch.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
