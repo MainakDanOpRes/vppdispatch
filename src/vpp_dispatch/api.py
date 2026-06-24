@@ -41,6 +41,7 @@ def dispatch_customer(payload: LiveCustomerInput):
     logger.info(f"Dispatch result for {payload.customer_id}: {result}")
     return result
 
+@app.get("/dispatch/batch")
 @app.post("/dispatch/batch")
 def dispatch_batch(payload: BatchDispatchInput):
     results = {}
