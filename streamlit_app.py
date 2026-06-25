@@ -29,7 +29,7 @@ if uploaded_file is not None:
 
     # Simple input for demonstration
     if st.button("Run Dispatch"):
-        API_URL = "https://vppdispatch.onrender.com/dispatch"
+        API_URL = "https://vppdispatch-1.onrender.com/dispatch"
         response = requests.post(API_URL, json=payload)
 
         if response.status_code == 200:
