@@ -15,7 +15,7 @@ def test_dispatch_single():
     r = client.post("/dispatch", json=payload)
     assert r.status_code == 200
     result = r.json()
-    # power balance holds
+   
     for t in range(12):
         lhs = payload["pv_kw"][t] + result["p_grid"][t]
         rhs = payload["fixed_load_kw"][t] + result["flex_ev"][t] + result["p_ch"][t] - result["p_dis"][t]
