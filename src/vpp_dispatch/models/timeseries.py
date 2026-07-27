@@ -1,4 +1,7 @@
-# src/vpp_dispatch/models/timeseries.py
+
+"""
+Time series data model for VPP Dispatch
+"""
 
 from typing import Sequence
 
@@ -19,4 +22,14 @@ class CustomerTimeSeries:
 
     @property
     def T(self) -> int:
+        """Number of time periods."""
         return len(self.pv_kw)
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary."""
+        return {
+            "pv_kw": self.pv_kw,
+            "fixed_load_kw": self.fixed_load_kw,
+            "price_buy": self.price_buy,
+            "price_sell": self.price_sell,
+        }
