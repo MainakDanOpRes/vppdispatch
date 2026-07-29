@@ -3,7 +3,7 @@ Fixed Load Asset model for VPP Dispatch
 """
 
 from typing import List, Tuple, Dict, Any, Optional
-from pyomo.environ import Var, NonNegativeReals, Constraint, Param
+from pyomo.environ import Var, NonNegativeReals, Constraint, Param, value
 from .base_asset import BaseAsset
 
 class FixedLoadAsset(BaseAsset):
@@ -63,9 +63,13 @@ class FixedLoadAsset(BaseAsset):
         fixed_var = getattr(m, f'fixed_{self.asset_id}', None)
         if fixed_var is not None:
             if hasattr(fixed_var, '__getitem__'):  # It's a Pyomo indexed variable/param
-                results['fixed_load'] = [fixed_var[t].value for t in m.T]
+                # Use pyomo.environ.value() rather than `.value` directly:
+                # for a Var this returns var.value, and for an (immutable)
+                # Param it returns the underlying numeric value without
+                # requiring a `.value` attribute on the indexed result.
+                results['fixed_load'] = [value(fixed_var[t]) for t in m.T]
             else:
-                results['fixed_load'] = fixed_var.value
+                results['fixed_load'] = value(fixed_var)
         return results
 
     def to_dict(self) -> Dict[str, Any]:
