@@ -17,7 +17,7 @@ class CostObjective:
                     continue 
                 
                 if hasattr(asset, 'get_objective_cost'):
-                    asset_cost_expr = asset.get_objective_cost(m)
+                    asset_cost_expr = asset.register_objectives(m)
                     if asset_cost_expr != 0.0:
                         expr += (asset_cost_expr * asset.objective_weight)
 

@@ -1,75 +1,75 @@
-"""
-Power Balance Constraint for VPP Dispatch
-Handles multiple assets of the same type properly
-"""
-
 from typing import List
-from pyomo.environ import Var, Reals, Constraint, Param
+from pyomo.environ import Constraint
 
 class PowerBalanceConstraint:
-    """Power balance constraint that works with multiple assets of same type."""
+    """Power balance constraint that dynamically aggregates all assets, including the GridAsset."""
 
     def __init__(self, ts_data, assets: List = None):
         """
         Initialize with time series data and list of assets.
 
         Args:
-            ts_data: CustomerTimeSeries object
-            assets: List of asset objects (PVAsset, BatteryAsset, FlexLoadAsset)
+            ts_data: CustomerTimeSeries object (kept for backward compatibility)
+            assets: List of asset objects (PVAsset, BatteryAsset, FlexLoadAsset, FixedLoadAsset, GridAsset)
         """
         self.ts_data = ts_data
         self.assets = assets or []
 
     def register_variables_and_params(self, m):
-        """Register time series parameters and grid power variable."""
-        # Time series data as parameters
-        m.pv_profile = Param(m.T, initialize=lambda m, t: self.ts_data.pv_kw[t])
-        m.fixed_load = Param(m.T, initialize=lambda m, t: self.ts_data.fixed_load_kw[t])
-        m.price_buy = Param(m.T, initialize=lambda m, t: self.ts_data.price_buy[t])
-        m.price_sell = Param(m.T, initialize=lambda m, t: self.ts_data.price_sell[t])
-
-        # Grid power (can be positive or negative)
-        if not hasattr(m, "p_grid"):
-            m.p_grid = Var(m.T, domain=Reals)
+        """
+        Variables and parameters (like grid tariffs, PV profiles, and fixed loads) 
+        are now encapsulated within their respective asset classes. 
+        Nothing needs to be registered globally here.
+        """
+        pass
 
     def register(self, m):
-        """Register the power balance constraint."""
+        """Register the dynamic power balance constraint."""
 
         def balance_rule(m, t):
-            # Start with grid power
-            generation = m.p_grid[t]  # Positive = import from grid
+            total_generation = 0.0
+            total_load = 0.0
 
-            # Add PV generation from all PV assets
-            pv_generation = 0
             for asset in self.assets:
-                if asset.__class__.__name__ == 'PVAsset':
+                asset_class = asset.__class__.__name__
+
+                # 1. Grid Contributions
+                if asset_class == 'GridAsset':
+                    p_grid = getattr(m, f'p_grid_{asset.asset_id}', None)
+                    if p_grid is not None:
+                        total_generation += p_grid[t]  # Positive = import (generation for the home)
+
+                # 2. PV Contributions
+                elif asset_class == 'PVAsset':
                     pv_var = getattr(m, f'pv_{asset.asset_id}', None)
                     if pv_var is not None:
-                        pv_generation += pv_var[t]
+                        total_generation += pv_var[t]
 
-            # Add battery contributions (discharge - charge)
-            battery_power = 0
-            for asset in self.assets:
-                if asset.__class__.__name__ == 'BatteryAsset':
+                # 3. Battery Contributions
+                elif asset_class == 'BatteryAsset':
                     p_dis = getattr(m, f'p_dis_{asset.asset_id}', None)
                     p_ch = getattr(m, f'p_ch_{asset.asset_id}', None)
                     if p_dis is not None:
-                        battery_power += p_dis[t]  # Discharge adds to generation
+                        total_generation += p_dis[t]   # Discharge acts as generation
                     if p_ch is not None:
-                        battery_power -= p_ch[t]  # Charge subtracts from generation
+                        total_load += p_ch[t]          # Charge acts as load
 
-            # Add flexible loads
-            flex_load = 0
-            for asset in self.assets:
-                if asset.__class__.__name__ == 'FlexLoadAsset':
+                # 4. Flexible Load Contributions
+                elif asset_class == 'FlexLoadAsset':
                     flex_var = getattr(m, f'flex_{asset.asset_id}', None)
                     if flex_var is not None:
-                        flex_load += flex_var[t]
+                        total_load += flex_var[t]
 
-            # Power balance equation:
-            # Generation (PV + Grid + Battery Discharge) = Load (Fixed + Flex + Battery Charge)
-            # Rearranged: PV + Grid + Battery_Discharge - Battery_Charge = Fixed_Load + Flex_Load
-            return (m.pv_profile[t] + m.p_grid[t] + battery_power ==
-                    m.fixed_load[t] + flex_load)
+                # 5. Fixed Load Contributions
+                elif asset_class == 'FixedLoadAsset':
+                    fixed_var = getattr(m, f'fixed_load_{asset.asset_id}', None)
+                    if fixed_var is not None:
+                        total_load += fixed_var[t]
+
+            # Power balance equation: Total Generation == Total Load
+            if total_generation is 0.0 and total_load is 0.0:
+                return Constraint.Skip
+                
+            return total_generation == total_load
 
         m.power_balance = Constraint(m.T, rule=balance_rule)
