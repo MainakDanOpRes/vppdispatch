@@ -16,11 +16,17 @@ class AssetType(str, Enum):
     BATTERY = "battery"
     FLEX_LOAD = "flex_load"
     FIXED_LOAD = "fixed_load"
+    GRID = "grid"
 
 class AssetConfig(BaseModel):
     """configuration for a single asset"""
     asset_id: str = Field(..., description="Unique identified for the asset")
     asset_type: AssetType = Field(..., description="Type of the asset")
+
+    objective_weight: Optional[float] = Field(
+        default=1.0,
+        description="Weight for this asset's specific objective. Set to 0 to disable."
+    )
 
     # PV-specific
     pv_profile_kw: Optional[List[float]] = Field(
@@ -69,6 +75,11 @@ class AssetConfig(BaseModel):
         description="Initial state of charge in kWh",
         ge=0.0
     )
+    degradation_cost_per_kwh: Optional[float] = Field(
+        default=0.0,
+        description="Cost per kWh of battery degradation (applied to charge and discharge volume)",
+        ge=0.0
+    )
 
     # Flex load-specific
     name: Optional[str] = Field(
@@ -95,6 +106,11 @@ class AssetConfig(BaseModel):
         description="Time window (start, end) during which the load can operate"
     )
 
+    discomfort_cost_per_kwh: Optional[float] = Field(
+        default=0.0,
+        description="Penalty cost per kWh for shifting/delaying the flexible load"
+    )
+
     # Fixed load-specific
     fixed_load_profile_kw: Optional[List[float]] = Field(
         default=None,
@@ -112,6 +128,32 @@ class AssetConfig(BaseModel):
     operational_hours: Optional[Tuple[int, int]] = Field(
         default=None,
         description="Hours during which the fixed load operates (start, end)"
+    )
+
+    curtailment_cost_per_kwh: Optional[float] = Field(
+        default=0.0,
+        description="Penalty cost per kWh for curtailing the controllable fixed load"
+    )
+
+    # GRID specific
+    import_max_kw: Optional[float] = Field(
+        default=None,
+        description="import power in kw",
+        ge=0.1
+    )
+    export_max_kw: Optional[float] = Field(
+            default=None,
+            description="export power in kw",
+            ge=0.1
+        )
+    
+    price_buy: Optional[List[float]] = Field(
+        default=None,
+        description="Electricity buy prices for the grid asset"
+    )
+    price_sell: Optional[List[float]] = Field(
+        default=None,
+        description="Electricity sell prices for the grid asset"
     )
 
 

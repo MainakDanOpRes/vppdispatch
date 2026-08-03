@@ -19,13 +19,17 @@ class FlexLoadAsset(BaseAsset):
         p_max_kw: float = 7.0,
         energy_required_kwh: float = 14.0,
         time_window: Tuple[int, int] = (0, 23),
+        objective_weight: float = 1.0,
+        discomfort_cost_per_kwh: float = 0.0,
     ):
-        super().__init__(customer_id, asset_id)
+        super().__init__(customer_id, asset_id, objective_weight)
         self.name = name
         self.p_min_kw = p_min_kw
         self.p_max_kw = p_max_kw
         self.energy_required_kwh = energy_required_kwh
         self.t_start, self.t_end = time_window
+        self.discomfort_cost_per_kwh = discomfort_cost_per_kwh
+
 
     def register_variables(self, m):
         """Register flexible load variables."""
@@ -47,6 +51,20 @@ class FlexLoadAsset(BaseAsset):
 
         setattr(m, f'flex_bounds_{self.asset_id}', Constraint(m.T, rule=flex_bounds_rule))
         setattr(m, f'flex_energy_{self.asset_id}', Constraint(rule=energy_req_rule))
+
+    def register_objectives(self, m):
+        """Calculate discomfort penalty for delaying the flexible load."""
+        if self.discomfort_cost_per_kwh <= 0:
+            return 0.0
+            
+        flex_var = getattr(m, f'flex_{self.asset_id}')
+        
+        # Penalty increases the further 't' is from 't_start'.
+        # Example: t=t_start (no penalty), t=t_start+1 (1x penalty), etc.
+        return self.discomfort_cost_per_kwh * sum(
+            (t - self.t_start) * flex_var[t] * m.delta_t 
+            for t in m.T if t >= self.t_start
+        )
 
     def get_results(self, m) -> Dict[str, Any]:
         """Extract flexible load results."""

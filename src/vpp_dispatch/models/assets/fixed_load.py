@@ -16,13 +16,16 @@ class FixedLoadAsset(BaseAsset):
         fixed_load_profile_kw: List[float],
         is_controllable: bool = False,
         priority: int = 1,
-        operational_hours: Optional[Tuple[int, int]] = None
+        operational_hours: Optional[Tuple[int, int]] = None,
+        curtailment_cost_per_kwh: float = 0.0,
+        objective_weight: float = 1.0,
     ):
-        super().__init__(customer_id, asset_id)
+        super().__init__(customer_id, asset_id, objective_weight)
         self.fixed_load_profile_kw = fixed_load_profile_kw
         self.is_controllable = is_controllable
         self.priority = priority
         self.operational_hours = operational_hours
+        self.curtailment_cost_per_kwh = curtailment_cost_per_kwh
 
     def register_variables(self, m):
         """Register fixed load variables."""
@@ -56,6 +59,22 @@ class FixedLoadAsset(BaseAsset):
                     return fixed_var[t] <= self.fixed_load_profile_kw[t]
 
                 setattr(m, f'fixed_profile_{self.asset_id}', Constraint(m.T, rule=profile_rule))
+
+
+    def register_objectives(self, m):
+        """Calculate curtailment penalty for controllable fixed loads."""
+        # If not controllable or no cost is set, there is no penalty
+        if not self.is_controllable or self.curtailment_cost_per_kwh <= 0:
+            return 0.0
+            
+        fixed_var = getattr(m, f'fixed_{self.asset_id}')
+        
+        # Curtailment = (Original Profile - Actual Dispatch)
+        # Cost = Curtailment * Cost Rate * delta_t
+        return self.curtailment_cost_per_kwh * sum(
+            (self.fixed_load_profile_kw[t] - fixed_var[t]) * m.delta_t 
+            for t in m.T
+        )
 
     def get_results(self, m) -> Dict[str, Any]:
         """Extract fixed load results."""

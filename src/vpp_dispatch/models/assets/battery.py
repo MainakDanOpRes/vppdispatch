@@ -22,8 +22,10 @@ class BatteryAsset(BaseAsset):
         eff_charge: float = 0.95,
         eff_discharge: float = 0.95,
         soc_initial: float = None,
+        degradation_cost_per_kwh: float = 0.0,
+        objective_weight: float = 1.0,
     ):
-        super().__init__(customer_id, asset_id)
+        super().__init__(customer_id, asset_id, objective_weight)
         self.capacity_kwh = capacity_kwh
         self.p_charge_max_kw = p_charge_max_kw
         self.p_discharge_max_kw = p_discharge_max_kw
@@ -32,6 +34,7 @@ class BatteryAsset(BaseAsset):
         self.eff_charge = eff_charge
         self.eff_discharge = eff_discharge
         self.soc_initial = soc_initial if soc_initial is not None else (0.5 * capacity_kwh)
+        self.degradation_cost_per_kwh = degradation_cost_per_kwh
 
     def register_variables(self, m):
         """Register battery variables."""
@@ -68,6 +71,27 @@ class BatteryAsset(BaseAsset):
         setattr(m, f'c_soc_hi_{self.asset_id}', Constraint(m.T, rule=soc_hi))
         setattr(m, f'c_charge_ub_{self.asset_id}', Constraint(m.T, rule=charge_ub))
         setattr(m, f'c_disch_ub_{self.asset_id}', Constraint(m.T, rule=disch_ub))
+
+    def register_objectives(self, m):
+        """
+        Calculate the battery degradation cost for the objective function.
+        Cost = degradation_rate * total_energy_cycled
+        """
+        # If there is no cost associated with degradation, return 0.0
+        if self.degradation_cost_per_kwh <= 0:
+            return 0.0
+            
+        # Dynamically fetch this specific battery's variables from the Pyomo model
+        p_ch = getattr(m, f'p_ch_{self.asset_id}')
+        p_dis = getattr(m, f'p_dis_{self.asset_id}')
+        
+        # Calculate total energy cycled: sum of (Charge Power + Discharge Power) * delta_t
+        # Multiply by the degradation cost per kWh
+        degradation_expr = self.degradation_cost_per_kwh * sum(
+            (p_ch[t] + p_dis[t]) * m.delta_t for t in m.T
+        )
+        
+        return degradation_expr
 
     def get_results(self, m) -> Dict[str, Any]:
         """Extract battery results."""

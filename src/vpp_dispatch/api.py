@@ -1,10 +1,19 @@
 
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from vpp_dispatch.models.schemas import LiveCustomerInput, BatchDispatchInput
-from vpp_dispatch.services.dispatch_service import run_single_customer_dispatch
+from fastapi.responses import JSONResponse
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+import uuid
+
+from .models.schemas import LiveCustomerInput, BatchDispatchInput, CustomerConfig, AssetConfig, AssetType
+from .models.timeseries import CustomerTimeSeries
+from .services.dispatch_service import run_single_customer_dispatch, run_multi_asset_dispatch, run_batch_dispatch, create_optimization_summary
+
 import logging
+import traceback
+
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(
@@ -71,3 +80,6 @@ def test_dispatch():
     ts = dummy_payload.to_timeseries()
     result = run_single_customer_dispatch(dummy_payload.customer_id, ts)
     return result
+
+@app.get("/dispatch/multi-asset")
+@app.post("/dispatch/multi-asset")

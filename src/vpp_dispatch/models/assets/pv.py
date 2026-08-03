@@ -10,8 +10,9 @@ from .base_asset import BaseAsset
 class PVAsset(BaseAsset):
     """Photovoltaic asset model."""
 
-    def __init__(self, customer_id: str, asset_id: str, pv_profile_kw: List[float]):
-        super().__init__(customer_id, asset_id)
+    def __init__(self, customer_id: str, asset_id: str, pv_profile_kw: List[float],
+                 objective_weight: float = 1.0):
+        super().__init__(customer_id, asset_id, objective_weight)
         self.pv_profile_kw = pv_profile_kw
 
     def register_variables(self, m):
@@ -31,6 +32,13 @@ class PVAsset(BaseAsset):
             return pv_var[t] <= pv_avail[t]
 
         setattr(m, f'pv_limit_{self.asset_id}', Constraint(m.T, rule=pv_limit_rule))
+
+    def register_objectives(self, m):
+        """
+        Calculate the pv operational cost for the objective function.
+        Cost = 0 for renewable sources
+        """
+        return 0.0
 
     def get_results(self, m) -> Dict[str, Any]:
         """Extract PV results."""
