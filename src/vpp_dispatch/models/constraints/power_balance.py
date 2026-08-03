@@ -67,7 +67,7 @@ class PowerBalanceConstraint:
                         total_load += fixed_var[t]
 
             # Power balance equation: Total Generation == Total Load
-            if total_generation is 0.0 and total_load is 0.0:
+            if total_generation == 0.0 and total_load == 0.0:
                 return Constraint.Skip
                 
             return total_generation == total_load

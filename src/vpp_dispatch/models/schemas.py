@@ -6,7 +6,7 @@ Pydantic schemas for VPP Dispatch API
 from typing import Annotated, List, Optional, Tuple
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 from .timeseries import CustomerTimeSeries
 
@@ -161,36 +161,40 @@ class AssetConfig(BaseModel):
     # Validation: Ensure required parameters for each asset type are provided
     # ============================================================================
     @field_validator('pv_profile_kw')
-    def validate_pv_params(cls, v, values):
-        if values.get('asset_type') == AssetType.PV and v is None:
+    @classmethod
+    def validate_pv_params(cls, v, info: ValidationInfo):
+        if info.data.get('asset_type') == AssetType.PV and v is None:
             raise ValueError("pv_profile_kw is required for PV assets")
         return v
 
     @field_validator('capacity_kwh')
-    def validate_battery_params(cls, v, values):
-        if values.get('asset_type') == AssetType.BATTERY and v is None:
+    @classmethod
+    def validate_battery_params(cls, v, info: ValidationInfo):
+        if info.data.get('asset_type') == AssetType.BATTERY and v is None:
             raise ValueError("capacity_kwh is required for Battery assets")
-        if values.get('asset_type') == AssetType.BATTERY:
-            if values.get('p_charge_max_kw') is None:
+        if info.data.get('asset_type') == AssetType.BATTERY:
+            if info.data.get('p_charge_max_kw') is None:
                 raise ValueError("p_charge_max_kw is required for Battery assets")
-            if values.get('p_discharge_max_kw') is None:
+            if info.data.get('p_discharge_max_kw') is None:
                 raise ValueError("p_discharge_max_kw is required for Battery assets")
         return v
 
     @field_validator('p_min_kw', 'p_max_kw', 'energy_required_kwh')
-    def validate_flex_load_params(cls, v, values, field):
-        if values.get('asset_type') == AssetType.FLEX_LOAD:
-            if field.name == 'p_min_kw' and v is None:
+    @classmethod
+    def validate_flex_load_params(cls, v, info: ValidationInfo):
+        if info.data.get('asset_type') == AssetType.FLEX_LOAD:
+            if info.field_name == 'p_min_kw' and v is None:
                 raise ValueError("p_min_kw is required for Flex Load assets")
-            if field.name == 'p_max_kw' and v is None:
+            if info.field_name == 'p_max_kw' and v is None:
                 raise ValueError("p_max_kw is required for Flex Load assets")
-            if field.name == 'energy_required_kwh' and v is None:
+            if info.field_name == 'energy_required_kwh' and v is None:
                 raise ValueError("energy_required_kwh is required for Flex Load assets")
         return v
 
     @field_validator('fixed_load_profile_kw')
-    def validate_fixed_load_params(cls, v, values):
-        if values.get('asset_type') == AssetType.FIXED_LOAD and v is None:
+    @classmethod
+    def validate_fixed_load_params(cls, v, info: ValidationInfo):
+        if info.data.get('asset_type') == AssetType.FIXED_LOAD and v is None:
             raise ValueError("fixed_load_profile_kw is required for Fixed Load assets")
         return v
 
@@ -220,7 +224,8 @@ class CustomerConfig(BaseModel):
     )
 
     @field_validator('assets')
-    def validate_unique_asset_ids(cls, v):
+    @classmethod
+    def validate_unique_asset_ids(cls, v, info: ValidationInfo):
         """Ensure all asset IDs are unique."""
         asset_ids = [asset.asset_id for asset in v]
         if len(asset_ids) != len(set(asset_ids)):
@@ -228,12 +233,13 @@ class CustomerConfig(BaseModel):
         return v
     
     @field_validator('pv_kw', 'fixed_load_kw', 'price_buy', 'price_sell')
-    def validate_time_series_length(cls, v, values, field):
+    @classmethod
+    def validate_time_series_length(cls, v, info: ValidationInfo):
         """Ensure all time series have the same length as time_periods."""
-        if v is not None and values.get('time_periods') is not None:
-            if len(v) != values['time_periods']:
+        if v is not None and info.data.get('time_periods') is not None:
+            if len(v) != info.data['time_periods']:
                 raise ValueError(
-                    f"{field.name} length ({len(v)}) must match time_periods ({values['time_periods']})"
+                    f"{info.field_name} length ({len(v)}) must match time_periods ({info.data['time_periods']})"
                 )
         return v
 

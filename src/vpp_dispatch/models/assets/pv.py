@@ -45,5 +45,11 @@ class PVAsset(BaseAsset):
         results = {}
         pv_var = getattr(m, f'pv_{self.asset_id}', None)
         if pv_var is not None:
-            results['pv'] = [pv_var[t].value for t in m.T]
+            results[f'pv_{self.asset_id}'] = [pv_var[t].value for t in m.T]
         return results
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize PV asset to dictionary."""
+        d = super().to_dict()
+        d[f"pv_{self.asset_id}_profile_kw"] = self.pv_profile_kw
+        return d
