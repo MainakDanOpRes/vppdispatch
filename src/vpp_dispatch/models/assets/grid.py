@@ -1,5 +1,5 @@
 from typing import List, Dict, Any
-from pyomo.environ import Var, Reals, NonNegativeReals, Constraint, Param, value
+from pyomo.environ import Var, Reals, NonNegativeReals, Constraint, Param, value, Binary
 from .base_asset import BaseAsset
 
 class GridAsset(BaseAsset):
@@ -29,6 +29,9 @@ class GridAsset(BaseAsset):
         # Unidirectional variables for pricing
         setattr(m, f'p_grid_buy_{self.asset_id}', Var(m.T, domain=NonNegativeReals))
         setattr(m, f'p_grid_sell_{self.asset_id}', Var(m.T, domain=NonNegativeReals))
+
+        # binary variables for nonsimultaneous import export
+        setattr(m, f'u_grid_buy_{self.asset_id}', Var(m.T, domain=Binary))
         
         # Tariffs as parameters
         setattr(m, f'price_buy_{self.asset_id}', Param(m.T, initialize=lambda m, t: self.price_buy[t]))
@@ -44,6 +47,7 @@ class GridAsset(BaseAsset):
         p_grid = getattr(m, f'p_grid_{self.asset_id}')
         p_buy = getattr(m, f'p_grid_buy_{self.asset_id}')
         p_sell = getattr(m, f'p_grid_sell_{self.asset_id}')
+        u_buy = getattr(m, f'u_grid_buy_{self.asset_id}')
         
         # Fetch bound parameters
         import_limit = getattr(m, f'import_kw_{self.asset_id}')
@@ -57,13 +61,13 @@ class GridAsset(BaseAsset):
 
         # 2. Import Maximum Limit
         def import_limit_rule(m, t):
-            return p_buy[t] <= import_limit
+            return p_buy[t] <= import_limit*u_buy[t]
             
         setattr(m, f'import_limit_{self.asset_id}', Constraint(m.T, rule=import_limit_rule))
 
         # 3. Export Maximum Limit
         def export_limit_rule(m, t):
-            return p_sell[t] <= export_limit
+            return p_sell[t] <= export_limit*(1-u_buy[t])
             
         setattr(m, f'export_limit_{self.asset_id}', Constraint(m.T, rule=export_limit_rule))
         
@@ -82,3 +86,14 @@ class GridAsset(BaseAsset):
         if p_grid is not None:
             return {'p_grid': [value(p_grid[t]) for t in m.T]}
         return {}
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize Grid asset to dictionary."""
+        d = super().to_dict()
+        d.update({
+            f"grid_{self.asset_id}_import_max_kw": self.import_max_kw,
+            f"grid_{self.asset_id}_export_max_kw": self.export_max_kw,
+            f"grid_{self.asset_id}_price_buy": self.price_buy,
+            f"grid_{self.asset_id}_price_sell": self.price_sell,
+        })
+        return d

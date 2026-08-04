@@ -101,3 +101,19 @@ class BatteryAsset(BaseAsset):
             if var is not None:
                 results[var_name] = [var[t].value for t in m.T]
         return results
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize Battery asset to dictionary."""
+        d = super().to_dict()
+        d.update({
+            "capacity_kwh": self.capacity_kwh,
+            "p_charge_max_kw": self.p_charge_max_kw,
+            "p_discharge_max_kw": self.p_discharge_max_kw,
+            "soc_min": self.soc_min,
+            "soc_max": self.soc_max,
+            "eff_charge": self.eff_charge,
+            "eff_discharge": self.eff_discharge,
+            "soc_initial": self.soc_initial,
+            "degradation_cost_per_kwh": self.degradation_cost_per_kwh
+        })
+        return d

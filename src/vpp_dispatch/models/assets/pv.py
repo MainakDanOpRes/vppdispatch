@@ -51,5 +51,5 @@ class PVAsset(BaseAsset):
     def to_dict(self) -> Dict[str, Any]:
         """Serialize PV asset to dictionary."""
         d = super().to_dict()
-        d[f"pv_{self.asset_id}_profile_kw"] = self.pv_profile_kw
+        d["pv_profile_kw"] = self.pv_profile_kw
         return d
