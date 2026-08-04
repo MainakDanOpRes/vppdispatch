@@ -13,7 +13,7 @@
 - **Dependency management:** [uv](https://docs.astral.sh/uv/)
 - **Testing / linting:** pytest, ruff
 - **Containerization:** Docker (multi-stage build)
-- **Deployment:** Kubernetes manifests under `infra/k8s`
+
 
 ## Project Structure
 
@@ -22,8 +22,6 @@ vppdispatch/
 ├── src/
 │   └── vpp_dispatch/     # Application package (FastAPI app, dispatch model, etc.)
 ├── tests/                # Test suite (pytest)
-├── infra/
-│   └── k8s/              # Kubernetes deployment manifests
 ├── Dockerfile            # Multi-stage build → uvicorn vpp_dispatch.api:app
 ├── main.py               # Entry-point script
 ├── pyproject.toml        # Project metadata & dependencies
@@ -78,9 +76,7 @@ docker run -p 8000:8000 vpp-dispatch
 
 The image uses a multi-stage build to keep the runtime image lean, and serves the FastAPI app via Uvicorn on port `8000`.
 
-## Deployment
 
-Kubernetes manifests for deploying the service live in [`infra/k8s`](./infra/k8s). Update image references and environment-specific config there before applying to a cluster:
 
 ```bash
 kubectl apply -f infra/k8s/
@@ -99,4 +95,4 @@ The project depends on `python-dotenv`, so runtime configuration can be supplied
 
 ## License
 
-No license has been specified yet. Add a `LICENSE` file to clarify how others may use this code.
+No license has been specified yet. 
