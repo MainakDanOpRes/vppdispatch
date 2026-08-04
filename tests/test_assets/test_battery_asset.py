@@ -104,6 +104,59 @@ class TestBatteryAsset:
             residual_t1 = value(soc_constraint_t1.body) - value(soc_constraint_t1.lower)
             assert abs(residual_t1) < 1e-9
 
+    def test_register_objectives_no_cost(self, empty_model):
+        """Test that objective returns 0.0 when degradation cost is zero."""
+        battery = BatteryAsset(
+            customer_id="cust1",
+            asset_id="batt_1",
+            capacity_kwh=10.0,
+            p_charge_max_kw=5.0,
+            p_discharge_max_kw=5.0,
+            degradation_cost_per_kwh=0.0  # Zero cost
+        )
+        battery.register_variables(empty_model)
+        
+        # Call the objective function
+        obj_expr = battery.register_objectives(empty_model)
+        
+        # Since cost is 0, it should return a float 0.0 directly, not a Pyomo expression
+        assert obj_expr == 0.0
+
+    def test_register_objectives_with_cost(self, empty_model):
+        """Test the degradation cost calculation expression."""
+        cost_per_kwh = 0.1
+        battery = BatteryAsset(
+            customer_id="cust1",
+            asset_id="batt_1",
+            capacity_kwh=10.0,
+            p_charge_max_kw=5.0,
+            p_discharge_max_kw=5.0,
+            degradation_cost_per_kwh=cost_per_kwh
+        )
+        battery.register_variables(empty_model)
+        
+        # Get variable references
+        p_ch = getattr(empty_model, "p_ch_batt_1")
+        p_dis = getattr(empty_model, "p_dis_batt_1")
+        
+        # Assign values to simulate a scenario
+        # e.g., 2kW charge and 1kW discharge for all time periods
+        for t in empty_model.T:
+            p_ch[t].value = 2.0
+            p_dis[t].value = 1.0
+            
+        # Get the Pyomo expression
+        obj_expr = battery.register_objectives(empty_model)
+        
+        # Calculate what the expected cost should be manually
+        # Total power cycled per time step = 2.0 + 1.0 = 3.0 kW
+        # Energy per time step = 3.0 * delta_t
+        expected_energy_cycled = sum(3.0 * empty_model.delta_t for _ in empty_model.T)
+        expected_cost = expected_energy_cycled * cost_per_kwh
+        
+        # Evaluate the Pyomo expression and compare
+        assert value(obj_expr) == pytest.approx(expected_cost)
+
     def test_get_results(self, battery_asset, empty_model):
         """Test extracting battery results."""
         battery_asset.register_variables(empty_model)

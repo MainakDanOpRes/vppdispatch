@@ -77,7 +77,7 @@ class TestPVAsset:
         assert d["type"] == "PVAsset"
         
         # Look for the dynamic profile key
-        expected_profile_key = f"pv_{pv_asset.asset_id}_profile_kw"
+        expected_profile_key = "pv_profile_kw"
         assert expected_profile_key in d
         assert d[expected_profile_key] == pv_asset.pv_profile_kw
 
