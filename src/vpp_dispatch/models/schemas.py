@@ -82,6 +82,11 @@ class AssetConfig(BaseModel):
     )
 
     # Flex load-specific
+    p_on_kw: Optional[float] = Field(
+        default=None,
+        description="Power consumption when turned on in kW",
+        ge=0.1
+    )
     name: Optional[str] = Field(
         default=None,
         description="Human-readable name for the flexible load"
@@ -105,7 +110,6 @@ class AssetConfig(BaseModel):
         default=None,
         description="Time window (start, end) during which the load can operate"
     )
-
     discomfort_cost_per_kwh: Optional[float] = Field(
         default=0.0,
         description="Penalty cost per kWh for shifting/delaying the flexible load"

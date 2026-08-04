@@ -9,5 +9,6 @@ from .flex_load import FlexLoadAsset
 from .fixed_load import FixedLoadAsset
 from .grid import GridAsset
 
+
 __all__ = ["BaseAsset", "PVAsset", "BatteryAsset", 
            "FlexLoadAsset", "FixedLoadAsset", "GridAsset"]

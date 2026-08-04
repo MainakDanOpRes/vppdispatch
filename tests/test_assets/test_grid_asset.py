@@ -106,10 +106,6 @@ class TestGridAsset:
         u_buy = empty_model.u_grid_buy_grid_1
         
         # Set dummy values: 
-        # t=0: buy 10 kW @ 0.15 (Cost: 1.5)
-        # t=1: buy 10 kW @ 0.15 (Cost: 1.5)
-        # t=2: sell 20 kW @ 0.08 (Rev: -1.6)
-        # t=3: sell 20 kW @ 0.08 (Rev: -1.6)
         
         p_buy[0].value, p_sell[0].value, u_buy[0].value = 10.0, 0.0, 1
         p_buy[1].value, p_sell[1].value, u_buy[1].value = 10.0, 0.0, 1
