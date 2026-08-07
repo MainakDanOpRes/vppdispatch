@@ -4,11 +4,21 @@ Manages solver selection, configuration, and fallback mechanisms.
 """
 
 from typing import Dict, Any, Optional, Tuple, List
+from threading import Lock
 from pyomo.environ import SolverFactory, SolverStatus, TerminationCondition
 from pyomo.opt import SolverResults
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Pyomo's solver interfaces (in particular the legacy HiGHS interface) capture
+# stdout/stderr via a shared TeeStream that is not safe to use from multiple
+# threads at once. batch_dispatch.py solves several customers concurrently via
+# ThreadPoolExecutor, which without this lock reliably deadlocks or raises
+# "Captured output does not match sys.stdout" / TeeStream errors. Model
+# building and result extraction are pure Python and stay concurrent; only the
+# actual solver.solve() call is serialized.
+_SOLVE_LOCK = Lock()
 
 # Pre-configured solver settings optimized for VPP dispatch problems
 SOLVER_CONFIGS = {
@@ -128,8 +138,8 @@ class SolverManager:
 
             # Configure solver options
             options = self._get_solver_options(solver_name)
-            if hasattr(solver, 'set_options') and options:
-                solver.set_options(options)
+            if hasattr(solver, 'options') and options:
+                solver.options.update(options)
 
             logger.debug(f"Created solver '{solver_name}' with options: {options}")
             return solver
@@ -191,12 +201,17 @@ class SolverManager:
 
             try:
                 logger.info(f"Solving with {solver_name}...")
-                results = solver.solve(model, tee=False)
+                with _SOLVE_LOCK:
+                    results = solver.solve(model, tee=False)
 
                 # Check solution status
                 solver_status = results.solver.status
                 termination_condition = results.solver.termination_condition
-                solve_time = results.solver.time
+                try:
+                    solve_time = results.solver.wallclock_time
+                    solve_time = float(solve_time)
+                except (AttributeError, TypeError, ValueError):
+                    solve_time = 0.0
 
                 if solver_status == SolverStatus.ok:
                     if termination_condition == TerminationCondition.optimal:

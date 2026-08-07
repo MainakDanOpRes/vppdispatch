@@ -186,7 +186,7 @@ class FlexLoadAsset(BaseAsset):
         if self.is_continuous:
             d.update({"p_min_kw": self.p_min_kw, "p_max_kw": self.p_max_kw, "energy_required_kwh": self.energy_required_kwh})
         elif self.is_on_off:
-            d.update({"p_on_kw": self.p_on_kw, "energy_required_kwh": self.energy_required_kwh})[cite: 2]
+            d.update({"p_on_kw": self.p_on_kw, "energy_required_kwh": self.energy_required_kwh})
         elif self.is_shiftable:
             d.update({"load_profile": self.load_profile})
             

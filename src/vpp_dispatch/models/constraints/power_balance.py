@@ -62,14 +62,16 @@ class PowerBalanceConstraint:
 
                 # 5. Fixed Load Contributions
                 elif asset_class == 'FixedLoadAsset':
-                    fixed_var = getattr(m, f'fixed_load_{asset.asset_id}', None)
+                    fixed_var = getattr(m, f'fixed_{asset.asset_id}', None)
                     if fixed_var is not None:
                         total_load += fixed_var[t]
 
             # Power balance equation: Total Generation == Total Load
-            if total_generation == 0.0 and total_load == 0.0:
-                return Constraint.Skip
-                
+            
+            if isinstance(total_generation, (int, float)) and isinstance(total_load, (int, float)):
+                if total_generation == 0.0 and total_load == 0.0:
+                    return Constraint.Skip
+
             return total_generation == total_load
 
         m.power_balance = Constraint(m.T, rule=balance_rule)
