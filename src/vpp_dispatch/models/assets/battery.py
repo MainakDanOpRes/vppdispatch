@@ -33,7 +33,7 @@ class BatteryAsset(BaseAsset):
         self.soc_max = soc_max * capacity_kwh
         self.eff_charge = eff_charge
         self.eff_discharge = eff_discharge
-        self.soc_initial = soc_initial * capacity_kwh if soc_initial is not None else (0.5 * capacity_kwh)
+        self.soc_initial = soc_initial if soc_initial is not None else (0.5 * capacity_kwh)
         self.degradation_cost_per_kwh = degradation_cost_per_kwh
 
     def register_variables(self, m):

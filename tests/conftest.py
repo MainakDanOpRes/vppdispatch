@@ -11,6 +11,38 @@ from src.vpp_dispatch.models.objectives.cost_minimisation import CostObjective
 from src.vpp_dispatch.optimisation.model_builder import ModelBuilder
 from src.vpp_dispatch.optimisation.solver_manager import SolverManager
 
+
+# ============================================================================
+# PYTEST CONFIGURATION
+# ============================================================================
+
+def pytest_addoption(parser):
+    """
+    Registers --run-solver-tests. Previously referenced by skip_solver_tests
+    below via request.config.getoption(...) but never registered, which raises
+    ValueError('no option named --run-solver-tests') the first time any test
+    carries the requires_solver marker. Defaults to True since HiGHS is
+    expected to be available; pass --run-solver-tests=false / omit HiGHS to
+    skip solver-dependent tests in constrained environments.
+    """
+    parser.addoption(
+        "--run-solver-tests",
+        action="store_true",
+        default=True,
+        help="Run tests that invoke the real Pyomo/HiGHS solver (default: enabled).",
+    )
+
+
+def pytest_configure(config):
+    """Register custom markers so pytest doesn't warn about unknown marks."""
+    config.addinivalue_line(
+        "markers", "requires_solver: test invokes the real optimization solver (HiGHS)."
+    )
+    config.addinivalue_line(
+        "markers", "integration: test exercises multiple assets/components together."
+    )
+
+
 # ============================================================================
 # BASIC FIXTURES
 # ============================================================================
@@ -163,7 +195,7 @@ def power_balance_constraint(simple_timeseries, assets):
 @pytest.fixture
 def cost_objective():
     """Cost objective function."""
-    return CostObjective(batt_degradation_cost_per_kwh=0.01)
+    return CostObjective()
 
 @pytest.fixture
 def model_builder(assets, power_balance_constraint, cost_objective):
