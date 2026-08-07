@@ -69,6 +69,8 @@ def create_asset_from_config(
                 eff_charge=asset_config.eff_charge or 0.95,
                 eff_discharge=asset_config.eff_discharge or 0.95,
                 soc_initial=asset_config.soc_initial or None,
+                p_charge_min_kw=asset_config.p_charge_min_kw or 0,
+                p_discharge_min_kw=asset_config.p_discharge_min_kw or 0,
                 degradation_cost_per_kwh=asset_config.degradation_cost_per_kwh or 0.0,
                 objective_weight=asset_config.objective_weight or 1.0
             )

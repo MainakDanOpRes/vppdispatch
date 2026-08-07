@@ -21,11 +21,71 @@ class BatteryAsset(BaseAsset):
         soc_max: float = 0.9,
         eff_charge: float = 0.95,
         eff_discharge: float = 0.95,
+        p_charge_min_kw: float = 0,
+        p_discharge_min_kw: float = 0,
         soc_initial: float = None,
         degradation_cost_per_kwh: float = 0.0,
         objective_weight: float = 1.0,
     ):
         super().__init__(customer_id, asset_id, objective_weight)
+
+        # Sanity check on the arguments
+        if capacity_kwh <= 0:
+            raise ValueError(
+                f"capacity_kwh must be > 0, but got {capacity_kwh}"
+                )
+
+        if soc_min > 1 or soc_min < 0:
+            raise ValueError(
+                f"soc_min should be between 0 and 1, but currently at {soc_min}"
+                )
+
+        if soc_max > 1 or soc_max < 0:
+            raise ValueError(
+                f"soc_max should be between 0 and 1, but currently at {soc_max}"
+                )
+
+        if soc_max < soc_min:
+            raise ValueError(
+                f"soc_min ({soc_min}) cannot be greater than "
+                f"soc_max ({soc_max})"
+                )
+
+        if soc_initial is not None and not 0 <= soc_initial <= 1:
+            raise ValueError(
+                f"soc_initial should be between 0 and 1, but got {soc_initial}"
+            )
+
+        if not 0 < eff_charge <= 1:
+            raise ValueError(
+                f"eff_charge should be in (0, 1], but got {eff_charge}"
+                )
+
+        if not 0 < eff_discharge <= 1:
+            raise ValueError(
+                f"eff_discharge should be in (0, 1], but got {eff_discharge}"
+                )
+
+        if p_charge_max_kw < 0:
+            raise ValueError(
+                f"p_charge_max_kw must be >= 0, but got {p_charge_max_kw}"
+            )
+
+        if p_discharge_max_kw < 0:
+            raise ValueError(
+                f"p_discharge_max_kw must be >= 0, but got {p_discharge_max_kw}"
+            )
+
+        if p_charge_min_kw < 0:
+            raise ValueError(
+                f"p_charge_min_kw must be >= 0, but got {p_charge_max_kw}"
+            )
+        
+        if p_discharge_min_kw < 0:
+            raise ValueError(
+                f"p_discharge_min_kw must be >= 0, but got {p_discharge_max_kw}"
+            )
+
         self.capacity_kwh = capacity_kwh
         self.p_charge_max_kw = p_charge_max_kw
         self.p_discharge_max_kw = p_discharge_max_kw
@@ -33,7 +93,11 @@ class BatteryAsset(BaseAsset):
         self.soc_max = soc_max * capacity_kwh
         self.eff_charge = eff_charge
         self.eff_discharge = eff_discharge
-        self.soc_initial = soc_initial if soc_initial is not None else (0.5 * capacity_kwh)
+        self.soc_initial = (
+            soc_initial * capacity_kwh 
+            if soc_initial is not None
+            else 0.5 * capacity_kwh
+            )
         self.degradation_cost_per_kwh = degradation_cost_per_kwh
 
     def register_variables(self, m):

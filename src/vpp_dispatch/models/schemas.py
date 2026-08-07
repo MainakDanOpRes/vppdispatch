@@ -50,6 +50,16 @@ class AssetConfig(BaseModel):
         description="Maximum discharge power in kW",
         ge=0.1
     )
+    p_charge_min_kw: Optional[float] = Field(
+        default=None,
+        description="Maximum charge power in kW",
+        ge=0.0
+    )
+    p_discharge_min_kw: Optional[float] = Field(
+        default=None,
+        description="Maximum discharge power in kW",
+        ge=0
+    )
     soc_min: Optional[float] = Field(
         default=None,
         description="Minimum state of charge (fraction of capacity)",
