@@ -67,7 +67,11 @@ class PowerBalanceConstraint:
                         total_load += fixed_var[t]
 
             # Power balance equation: Total Generation == Total Load
-            
+            # NOTE: total_generation/total_load start out as plain python floats and
+            # only become Pyomo expressions once a Var is added to them. Comparing a
+            # Pyomo expression with `==` inside an `if` raises a PyomoException, so we
+            # only take the "nothing registered" skip path when both are still plain
+            # numbers (i.e. no asset contributed anything at this time step).
             if isinstance(total_generation, (int, float)) and isinstance(total_load, (int, float)):
                 if total_generation == 0.0 and total_load == 0.0:
                     return Constraint.Skip
