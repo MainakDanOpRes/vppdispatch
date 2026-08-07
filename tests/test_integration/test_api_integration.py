@@ -69,7 +69,7 @@ class TestMultiAssetEndpoint:
                 {
                     "asset_id": "battery_1", "asset_type": "battery",
                     "capacity_kwh": 10, "p_charge_max_kw": 5, "p_discharge_max_kw": 5,
-                    "soc_initial": 5,
+                    "soc_initial": 0.5,
                 },
                 {"asset_id": "fixed_1", "asset_type": "fixed_load", "fixed_load_profile_kw": [1] * 6},
                 {

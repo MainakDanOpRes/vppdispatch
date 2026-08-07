@@ -60,7 +60,7 @@ class TestPVBatteryGridIntegration:
             customer_id="c1", asset_id="battery_1",
             capacity_kwh=10, p_charge_max_kw=5, p_discharge_max_kw=5,
             soc_min=0.0, soc_max=1.0, eff_charge=0.95, eff_discharge=0.95,
-            soc_initial=2.0,
+            soc_initial=0.2,
         )
         grid = GridAsset(
             customer_id="c1", asset_id="grid_1",
@@ -95,7 +95,7 @@ class TestPVBatteryGridIntegration:
             customer_id="c1", asset_id="battery_1",
             capacity_kwh=8, p_charge_max_kw=4, p_discharge_max_kw=4,
             soc_min=0.1, soc_max=0.9, eff_charge=0.9, eff_discharge=0.9,
-            soc_initial=4.0,
+            soc_initial=0.4,
         )
         fixed = FixedLoadAsset(customer_id="c1", asset_id="fixed_1", fixed_load_profile_kw=ts.fixed_load_kw)
         grid = GridAsset(
@@ -131,7 +131,7 @@ class TestPVBatteryGridIntegration:
             customer_id="c1", asset_id="battery_1",
             capacity_kwh=10, p_charge_max_kw=6, p_discharge_max_kw=6,
             soc_min=0.15, soc_max=0.85, eff_charge=0.9, eff_discharge=0.9,
-            soc_initial=5.0,
+            soc_initial=0.5,
         )
         pv = PVAsset(customer_id="c1", asset_id="pv_1", pv_profile_kw=ts.pv_kw)
         fixed = FixedLoadAsset(customer_id="c1", asset_id="fixed_1", fixed_load_profile_kw=ts.fixed_load_kw)
@@ -234,7 +234,7 @@ class TestFullFleetIntegration:
             customer_id="c1", asset_id="battery_1",
             capacity_kwh=10, p_charge_max_kw=5, p_discharge_max_kw=5,
             soc_min=0.1, soc_max=0.9, eff_charge=0.92, eff_discharge=0.92,
-            soc_initial=3.0,
+            soc_initial=0.3,
         )
         flex = FlexLoadAsset(
             customer_id="c1", asset_id="flex_1",

@@ -35,7 +35,7 @@ class TestBatteryAsset:
             soc_max=0.8,
             eff_charge=0.9,
             eff_discharge=0.92,
-            soc_initial=10.0
+            soc_initial=0.5
         )
         assert battery.soc_min == 4.0  # 0.2 * 20
         assert battery.soc_max == 16.0  # 0.8 * 20

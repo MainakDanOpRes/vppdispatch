@@ -112,7 +112,7 @@ def battery_asset():
         soc_max=0.9,
         eff_charge=0.95,
         eff_discharge=0.95,
-        soc_initial=5.0
+        soc_initial=0.5
     )
 
 @pytest.fixture
