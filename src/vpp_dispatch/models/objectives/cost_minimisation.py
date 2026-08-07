@@ -16,9 +16,14 @@ class CostObjective:
                 if not hasattr(asset, 'objective_weight') or asset.objective_weight == 0.0:
                     continue 
                 
-                if hasattr(asset, 'get_objective_cost'):
+                if hasattr(asset, 'register_objectives'):
                     asset_cost_expr = asset.register_objectives(m)
-                    if asset_cost_expr != 0.0:
+                    # asset_cost_expr is a plain 0.0 float when an asset has no cost
+                    # component, or a Pyomo expression once a Var is involved. Comparing
+                    # a Pyomo expression with `==`/bool() raises, so only skip the
+                    # plain-float case.
+                    is_trivial_zero = isinstance(asset_cost_expr, (int, float)) and asset_cost_expr == 0.0
+                    if asset_cost_expr is not None and not is_trivial_zero:
                         expr += (asset_cost_expr * asset.objective_weight)
 
         # Register the final aggregated objective

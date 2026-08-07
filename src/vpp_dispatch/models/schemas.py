@@ -6,7 +6,7 @@ Pydantic schemas for VPP Dispatch API
 from typing import Annotated, List, Optional, Tuple
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, field_validator, model_validator, ValidationInfo
 
 from .timeseries import CustomerTimeSeries
 
@@ -82,6 +82,29 @@ class AssetConfig(BaseModel):
     )
 
     # Flex load-specific
+    # NOTE: is_continuous / is_shiftable / is_on_off / load_profile were already
+    # referenced by services/asset_factory.py (asset_config.is_continuous, etc.)
+    # but were never declared on this schema, so creating any FLEX_LOAD asset via
+    # the API would raise AttributeError. Declaring them here fixes that.
+    is_continuous: Optional[bool] = Field(
+        default=None,
+        description=(
+            "Continuous flexible load mode: power can vary between p_min_kw and p_max_kw. "
+            "Leave unset to auto-select: continuous unless is_shiftable or is_on_off is True."
+        )
+    )
+    is_shiftable: Optional[bool] = Field(
+        default=False,
+        description="Shiftable load mode: a fixed load_profile is shifted to start at the cheapest time"
+    )
+    is_on_off: Optional[bool] = Field(
+        default=False,
+        description="On/off flexible load mode: draws a fixed p_on_kw once when turned on"
+    )
+    load_profile: Optional[List[float]] = Field(
+        default=None,
+        description="Fixed power profile (kW) to shift in time, required when is_shiftable is True"
+    )
     p_on_kw: Optional[float] = Field(
         default=None,
         description="Power consumption when turned on in kW",
@@ -163,44 +186,57 @@ class AssetConfig(BaseModel):
 
     # ============================================================================
     # Validation: Ensure required parameters for each asset type are provided
+    #
+    # NOTE: these were previously per-field `@field_validator`s that inspected
+    # `info.data` for *other* fields (e.g. capacity_kwh's validator checking
+    # p_charge_max_kw). In Pydantic v2, field validators run in declaration
+    # order and `info.data` only contains fields validated so far, so a field
+    # declared earlier in the class could never see a field declared later -
+    # valid configs were being rejected. A single model-level validator that
+    # runs after all fields are populated avoids that ordering trap.
     # ============================================================================
-    @field_validator('pv_profile_kw')
-    @classmethod
-    def validate_pv_params(cls, v, info: ValidationInfo):
-        if info.data.get('asset_type') == AssetType.PV and v is None:
-            raise ValueError("pv_profile_kw is required for PV assets")
-        return v
+    @model_validator(mode='after')
+    def validate_required_fields_for_asset_type(self):
+        if self.asset_type == AssetType.PV:
+            if self.pv_profile_kw is None:
+                raise ValueError("pv_profile_kw is required for PV assets")
 
-    @field_validator('capacity_kwh')
-    @classmethod
-    def validate_battery_params(cls, v, info: ValidationInfo):
-        if info.data.get('asset_type') == AssetType.BATTERY and v is None:
-            raise ValueError("capacity_kwh is required for Battery assets")
-        if info.data.get('asset_type') == AssetType.BATTERY:
-            if info.data.get('p_charge_max_kw') is None:
+        elif self.asset_type == AssetType.BATTERY:
+            if self.capacity_kwh is None:
+                raise ValueError("capacity_kwh is required for Battery assets")
+            if self.p_charge_max_kw is None:
                 raise ValueError("p_charge_max_kw is required for Battery assets")
-            if info.data.get('p_discharge_max_kw') is None:
+            if self.p_discharge_max_kw is None:
                 raise ValueError("p_discharge_max_kw is required for Battery assets")
-        return v
 
-    @field_validator('p_min_kw', 'p_max_kw', 'energy_required_kwh')
-    @classmethod
-    def validate_flex_load_params(cls, v, info: ValidationInfo):
-        if info.data.get('asset_type') == AssetType.FLEX_LOAD:
-            if info.field_name == 'p_min_kw' and v is None:
-                raise ValueError("p_min_kw is required for Flex Load assets")
-            if info.field_name == 'p_max_kw' and v is None:
-                raise ValueError("p_max_kw is required for Flex Load assets")
-            if info.field_name == 'energy_required_kwh' and v is None:
-                raise ValueError("energy_required_kwh is required for Flex Load assets")
-        return v
+        elif self.asset_type == AssetType.FLEX_LOAD:
+            if self.is_shiftable:
+                if not self.load_profile:
+                    raise ValueError("load_profile is required for shiftable Flex Load assets")
+            elif self.is_on_off:
+                if self.p_on_kw is None:
+                    raise ValueError("p_on_kw is required for on/off Flex Load assets")
+                if self.energy_required_kwh is None:
+                    raise ValueError("energy_required_kwh is required for on/off Flex Load assets")
+            else:  # continuous (default)
+                if self.p_min_kw is None:
+                    raise ValueError("p_min_kw is required for Flex Load assets")
+                if self.p_max_kw is None:
+                    raise ValueError("p_max_kw is required for Flex Load assets")
+                if self.energy_required_kwh is None:
+                    raise ValueError("energy_required_kwh is required for Flex Load assets")
 
-    @field_validator('fixed_load_profile_kw')
-    @classmethod
-    def validate_fixed_load_params(cls, v, info: ValidationInfo):
-        if info.data.get('asset_type') == AssetType.FIXED_LOAD and v is None:
-            raise ValueError("fixed_load_profile_kw is required for Fixed Load assets")
-        return v
+        elif self.asset_type == AssetType.FIXED_LOAD:
+            if self.fixed_load_profile_kw is None:
+                raise ValueError("fixed_load_profile_kw is required for Fixed Load assets")
+
+        # NOTE: Grid assets intentionally have no required-field check here.
+        # asset_factory.py defaults price_buy/price_sell to [] when omitted, and
+        # dispatch_service.run_multi_asset_dispatch() backfills them from the
+        # customer-level price_buy/price_sell if still empty - so a Grid asset
+        # config with no prices of its own is valid, not an error.
+
+        return self
 
 
 class CustomerConfig(BaseModel):

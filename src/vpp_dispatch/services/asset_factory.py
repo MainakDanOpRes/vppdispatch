@@ -74,13 +74,24 @@ def create_asset_from_config(
             )
 
         elif asset_type == AssetType.FLEX_LOAD:
+            is_shiftable = bool(asset_config.is_shiftable)
+            is_on_off = bool(asset_config.is_on_off)
+            # Auto-select continuous mode only when the caller didn't explicitly
+            # choose it AND didn't explicitly choose one of the other modes -
+            # otherwise e.g. `is_on_off=True` alone would still default
+            # is_continuous to True and trip FlexLoadAsset's mutual-exclusivity check.
+            if asset_config.is_continuous is not None:
+                is_continuous = bool(asset_config.is_continuous)
+            else:
+                is_continuous = not (is_shiftable or is_on_off)
+
             return FlexLoadAsset(
                 customer_id=customer_id,
                 asset_id=asset_config.asset_id,
                 name=asset_config.name or "FlexLoad",
-                is_continuous=asset_config.is_continuous or True,
-                is_on_off=asset_config.is_on_off or False,
-                is_shiftable=asset_config.is_shiftable or False,
+                is_continuous=is_continuous,
+                is_on_off=is_on_off,
+                is_shiftable=is_shiftable,
                 p_min_kw=asset_config.p_min_kw or 0.0,
                 p_max_kw=asset_config.p_max_kw or 7.0,
                 p_on_kw=asset_config.p_on_kw or 5.0,
