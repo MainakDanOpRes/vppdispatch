@@ -12,7 +12,41 @@ class BaseAsset(ABC):
                  objective_weight: float = 1.0):
         self.customer_id = customer_id
         self.asset_id = asset_id
-        self.objective_weight = objective_weight  # NEW
+        self.objective_weight = objective_weight
+
+    @property
+    def var_id(self) -> str:
+        """
+        Identifier used ONLY for naming Pyomo model attributes
+        (Var/Param/Constraint), e.g. f'p_grid_{asset.var_id}'.
+ 
+        Combines customer_id + asset_id so two customers reusing the same
+        asset_id convention (e.g. both using "battery_1") never collide as
+        attribute names on a shared model - which matters the moment more
+        than one customer's assets are registered onto the same
+        ConcreteModel (centralized/PCC dispatch). In single-customer
+        dispatch this is a no-op in effect (still unique), so nothing
+        about the existing single-customer flow changes behavior.
+ 
+        Never use var_id for anything user-facing (to_dict, get_results,
+        API responses) - asset_id is the identifier callers gave you and
+        must be echoed back unchanged.
+        """
+        return f"{self.customer_id}_{self.asset_id}"
+
+    @property
+    def result_key(self) -> str:
+        """
+        Identifier used as the dict key when SAVING/merging results (e.g.
+        results['assets'][asset.result_key] = {...}, or a DB row key).
+ 
+        Same customer_id+asset_id combination as var_id, kept as a
+        separate property because the two answer different questions
+        (Pyomo naming vs. results storage) even though today they compute
+        the same string - callers should use whichever name matches their
+        intent, not assume they'll always be identical.
+        """
+        return f"{self.customer_id}_{self.asset_id}"
 
     @abstractmethod
     def register_variables(self, m):

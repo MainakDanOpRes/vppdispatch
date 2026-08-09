@@ -45,21 +45,21 @@ class TestBatteryAsset:
         """Test battery variable registration."""
         battery_asset.register_variables(empty_model)
 
-        assert hasattr(empty_model, "p_ch_battery_1")
-        assert hasattr(empty_model, "p_dis_battery_1")
-        assert hasattr(empty_model, "u_battery_1")
-        assert hasattr(empty_model, "soc_battery_1")
+        assert hasattr(empty_model, "p_ch_test_customer_battery_1")
+        assert hasattr(empty_model, "p_dis_test_customer_battery_1")
+        assert hasattr(empty_model, "u_test_customer_battery_1")
+        assert hasattr(empty_model, "soc_test_customer_battery_1")
 
     def test_register_constraints(self, battery_asset, empty_model):
         """Test battery constraint registration."""
         battery_asset.register_variables(empty_model)
         battery_asset.register_constraints(empty_model)
 
-        assert hasattr(empty_model, "battery_soc_battery_1")
-        assert hasattr(empty_model, "c_soc_lo_battery_1")
-        assert hasattr(empty_model, "c_soc_hi_battery_1")
-        assert hasattr(empty_model, "c_charge_ub_battery_1")
-        assert hasattr(empty_model, "c_disch_ub_battery_1")
+        assert hasattr(empty_model, "battery_soc_test_customer_battery_1")
+        assert hasattr(empty_model, "c_soc_lo_test_customer_battery_1")
+        assert hasattr(empty_model, "c_soc_hi_test_customer_battery_1")
+        assert hasattr(empty_model, "c_charge_ub_test_customer_battery_1")
+        assert hasattr(empty_model, "c_disch_ub_test_customer_battery_1")
 
     def test_soc_dynamics(self, battery_asset, empty_model):
         """Test SOC dynamics constraint."""
@@ -67,9 +67,9 @@ class TestBatteryAsset:
         battery_asset.register_constraints(empty_model)
 
         # Assign values to the variables involved at t=0
-        p_ch = empty_model.p_ch_battery_1
-        p_dis = empty_model.p_dis_battery_1
-        soc = empty_model.soc_battery_1
+        p_ch = empty_model.p_ch_test_customer_battery_1
+        p_dis = empty_model.p_dis_test_customer_battery_1
+        soc = empty_model.soc_test_customer_battery_1
 
         t0 = empty_model.T.first()
         p_ch[t0].value = 2.0
@@ -83,7 +83,7 @@ class TestBatteryAsset:
         soc[t0].value = expected_soc0
 
         # Get SOC constraint for t=0 (first time period)
-        soc_constraint = empty_model.battery_soc_battery_1[t0]
+        soc_constraint = empty_model.battery_soc_test_customer_battery_1[t0]
 
         # Should be: soc[0] == soc_initial + eff_charge * p_ch[0] * delta_t
         #            - (1/eff_discharge) * p_dis[0] * delta_t
@@ -100,7 +100,7 @@ class TestBatteryAsset:
                 battery_asset.eff_charge * p_ch[t1].value * empty_model.delta_t
                 - (1 / battery_asset.eff_discharge) * p_dis[t1].value * empty_model.delta_t
             )
-            soc_constraint_t1 = empty_model.battery_soc_battery_1[t1]
+            soc_constraint_t1 = empty_model.battery_soc_test_customer_battery_1[t1]
             residual_t1 = value(soc_constraint_t1.body) - value(soc_constraint_t1.lower)
             assert abs(residual_t1) < 1e-9
 
@@ -136,8 +136,8 @@ class TestBatteryAsset:
         battery.register_variables(empty_model)
         
         # Get variable references
-        p_ch = getattr(empty_model, "p_ch_batt_1")
-        p_dis = getattr(empty_model, "p_dis_batt_1")
+        p_ch = getattr(empty_model, "p_ch_cust1_batt_1")
+        p_dis = getattr(empty_model, "p_dis_cust1_batt_1")
         
         # Assign values to simulate a scenario
         # e.g., 2kW charge and 1kW discharge for all time periods
@@ -163,9 +163,9 @@ class TestBatteryAsset:
 
         # Set values
         for t in empty_model.T:
-            empty_model.p_ch_battery_1[t].value = float(t) * 0.5
-            empty_model.p_dis_battery_1[t].value = float(t) * 0.3
-            empty_model.soc_battery_1[t].value = 5.0 + float(t) * 0.2
+            empty_model.p_ch_test_customer_battery_1[t].value = float(t) * 0.5
+            empty_model.p_dis_test_customer_battery_1[t].value = float(t) * 0.3
+            empty_model.soc_test_customer_battery_1[t].value = 5.0 + float(t) * 0.2
 
         results = battery_asset.get_results(empty_model)
         assert "p_ch" in results
@@ -180,12 +180,12 @@ class TestBatteryAsset:
 
         for t in empty_model.T:
             # Check SOC lower bound
-            lo_constraint = empty_model.c_soc_lo_battery_1[t]
+            lo_constraint = empty_model.c_soc_lo_test_customer_battery_1[t]
             # Should be: soc[t] >= soc_min
             assert value(lo_constraint.lower) == pytest.approx(battery_asset.soc_min)
 
 
             # Check SOC upper bound
-            hi_constraint = empty_model.c_soc_hi_battery_1[t]
+            hi_constraint = empty_model.c_soc_hi_test_customer_battery_1[t]
             # Should be: soc[t] <= soc_max
             assert value(hi_constraint.upper) == pytest.approx(battery_asset.soc_max)

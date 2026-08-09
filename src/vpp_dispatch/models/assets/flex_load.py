@@ -29,11 +29,11 @@ class FlexLoadAsset(BaseAsset):
         active_modes = sum([is_continuous, is_shiftable, is_on_off])
         if active_modes > 1:
             raise ValueError(
-                f"Asset {asset_id}: Conflicting load types. Only one of 'is_continuous', "
+                f"Asset {self.var_id}: Conflicting load types. Only one of 'is_continuous', "
                 f"'is_shiftable', or 'is_on_off' can be True."
             )
         if active_modes == 0:
-            raise ValueError(f"Asset {asset_id}: At least one load type flag must be True.")
+            raise ValueError(f"Asset {self.var_id}: At least one load type flag must be True.")
 
         self.name = name
         self.is_continuous = is_continuous
@@ -52,31 +52,31 @@ class FlexLoadAsset(BaseAsset):
     def register_variables(self, m):
         """Register flexible load variables."""
         # Continuous power variable used by the wider VPP dispatch (common to all)
-        if not hasattr(m, f'flex_{self.asset_id}'):
-            setattr(m, f'flex_{self.asset_id}', Var(m.T, domain=NonNegativeReals))
+        if not hasattr(m, f'flex_{self.var_id}'):
+            setattr(m, f'flex_{self.var_id}', Var(m.T, domain=NonNegativeReals))
         
         # Binary state variable (Needed for Continuous and On/Off)
         if self.is_continuous or self.is_on_off:
-            setattr(m, f'u_flex_{self.asset_id}', Var(m.T, domain=Binary))
+            setattr(m, f'u_flex_{self.var_id}', Var(m.T, domain=Binary))
                 
         # Start-up transition tracker (Needed for all modes)
-        setattr(m, f'v_start_{self.asset_id}', Var(m.T, domain=Binary))
+        setattr(m, f'v_start_{self.var_id}', Var(m.T, domain=Binary))
         
     def register_constraints(self, m):
         """Register flexible load constraints based on the active mode."""
-        flex_var = getattr(m, f'flex_{self.asset_id}')
-        v_start = getattr(m, f'v_start_{self.asset_id}')
+        flex_var = getattr(m, f'flex_{self.var_id}')
+        v_start = getattr(m, f'v_start_{self.var_id}')
         dt = m.delta_t
 
         if self.is_continuous or self.is_on_off:
-            u_flex = getattr(m, f'u_flex_{self.asset_id}')
+            u_flex = getattr(m, f'u_flex_{self.var_id}')
 
             # Common: Time Window Rule
             def time_window_rule(m, t):
                 if t < self.t_start or t > self.t_end:
                     return u_flex[t] == 0
                 return Constraint.Skip
-            setattr(m, f'flex_window_{self.asset_id}', Constraint(m.T, rule=time_window_rule))
+            setattr(m, f'flex_window_{self.var_id}', Constraint(m.T, rule=time_window_rule))
 
             # Common: Start-up tracker
             def startup_rule(m, t):
@@ -86,7 +86,7 @@ class FlexLoadAsset(BaseAsset):
                     return v_start[t] >= u_flex[t]
                 prev_t = t_list[t_idx - 1]
                 return v_start[t] >= u_flex[t] - u_flex[prev_t]
-            setattr(m, f'flex_startup_{self.asset_id}', Constraint(m.T, rule=startup_rule))
+            setattr(m, f'flex_startup_{self.var_id}', Constraint(m.T, rule=startup_rule))
 
             # Specifics for Continuous
             if self.is_continuous:
@@ -97,9 +97,9 @@ class FlexLoadAsset(BaseAsset):
                 def energy_req_rule(m):
                     return sum(flex_var[t] * dt for t in m.T) == self.energy_required_kwh
                 
-                setattr(m, f'flex_min_{self.asset_id}', Constraint(m.T, rule=flex_min_rule))
-                setattr(m, f'flex_max_{self.asset_id}', Constraint(m.T, rule=flex_max_rule))
-                setattr(m, f'flex_energy_{self.asset_id}', Constraint(rule=energy_req_rule))
+                setattr(m, f'flex_min_{self.var_id}', Constraint(m.T, rule=flex_min_rule))
+                setattr(m, f'flex_max_{self.var_id}', Constraint(m.T, rule=flex_max_rule))
+                setattr(m, f'flex_energy_{self.var_id}', Constraint(rule=energy_req_rule))
 
             # Specifics for On/Off
             if self.is_on_off:
@@ -110,9 +110,9 @@ class FlexLoadAsset(BaseAsset):
                 def single_activation_rule(m):
                     return sum(v_start[t] for t in m.T) <= 1
 
-                setattr(m, f'flex_on_power_{self.asset_id}', Constraint(m.T, rule=on_power_rule))
-                setattr(m, f'flex_on_energy_{self.asset_id}', Constraint(rule=on_energy_req_rule))
-                setattr(m, f'flex_single_act_{self.asset_id}', Constraint(rule=single_activation_rule))
+                setattr(m, f'flex_on_power_{self.var_id}', Constraint(m.T, rule=on_power_rule))
+                setattr(m, f'flex_on_energy_{self.var_id}', Constraint(rule=on_energy_req_rule))
+                setattr(m, f'flex_single_act_{self.var_id}', Constraint(rule=single_activation_rule))
 
         # Specifics for Shiftable Profile
         elif self.is_shiftable:
@@ -133,9 +133,9 @@ class FlexLoadAsset(BaseAsset):
                         power_at_t += v_start[start_t] * p_val
                 return flex_var[t] == power_at_t
 
-            setattr(m, f'shift_single_start_{self.asset_id}', Constraint(rule=single_start_rule))
-            setattr(m, f'shift_window_{self.asset_id}', Constraint(m.T, rule=start_window_rule))
-            setattr(m, f'shift_power_{self.asset_id}', Constraint(m.T, rule=power_profile_rule))
+            setattr(m, f'shift_single_start_{self.var_id}', Constraint(rule=single_start_rule))
+            setattr(m, f'shift_window_{self.var_id}', Constraint(m.T, rule=start_window_rule))
+            setattr(m, f'shift_power_{self.var_id}', Constraint(m.T, rule=power_profile_rule))
 
     def register_objectives(self, m):
         """Calculate discomfort penalty for delaying the flexible load."""
@@ -143,13 +143,13 @@ class FlexLoadAsset(BaseAsset):
             return 0.0
             
         if self.is_shiftable:
-            v_start = getattr(m, f'v_start_{self.asset_id}')
+            v_start = getattr(m, f'v_start_{self.var_id}')
             return self.discomfort_cost * sum(
                 (t - self.t_start) * v_start[t]
                 for t in m.T if t >= self.t_start
             )
         else:
-            flex_var = getattr(m, f'flex_{self.asset_id}')
+            flex_var = getattr(m, f'flex_{self.var_id}')
             return self.discomfort_cost * sum(
                 (t - self.t_start) * flex_var[t] * m.delta_t 
                 for t in m.T if t >= self.t_start
@@ -158,8 +158,8 @@ class FlexLoadAsset(BaseAsset):
     def get_results(self, m) -> Dict[str, Any]:
         """Extract flexible load results."""
         results = {}
-        flex_var = getattr(m, f'flex_{self.asset_id}', None)
-        v_start = getattr(m, f'v_start_{self.asset_id}', None)
+        flex_var = getattr(m, f'flex_{self.var_id}', None)
+        v_start = getattr(m, f'v_start_{self.var_id}', None)
         
         if flex_var is not None:
             results['flex_power_kw'] = [value(flex_var[t]) for t in m.T]
@@ -167,7 +167,7 @@ class FlexLoadAsset(BaseAsset):
             results['start_signal'] = [value(v_start[t]) for t in m.T]
 
         if self.is_continuous or self.is_on_off:
-            u_flex = getattr(m, f'u_flex_{self.asset_id}', None)
+            u_flex = getattr(m, f'u_flex_{self.var_id}', None)
             if u_flex is not None:
                 results['is_on'] = [value(u_flex[t]) for t in m.T]
             

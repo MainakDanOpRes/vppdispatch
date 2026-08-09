@@ -31,17 +31,17 @@ class FixedLoadAsset(BaseAsset):
         """Register fixed load variables."""
         if self.is_controllable:
             # If controllable, create a variable for actual consumption
-            setattr(m, f'fixed_{self.asset_id}', Var(m.T, domain=NonNegativeReals))
+            setattr(m, f'fixed_{self.var_id}', Var(m.T, domain=NonNegativeReals))
         else:
             # If not controllable, register as parameter
             def load_init(m, t):
                 return self.fixed_load_profile_kw[t]
-            setattr(m, f'fixed_{self.asset_id}', Param(m.T, initialize=load_init))
+            setattr(m, f'fixed_{self.var_id}', Param(m.T, initialize=load_init))
 
     def register_constraints(self, m):
         """Register fixed load constraints."""
         if self.is_controllable:
-            fixed_var = getattr(m, f'fixed_{self.asset_id}')
+            fixed_var = getattr(m, f'fixed_{self.var_id}')
 
             # Operational hours constraint
             if self.operational_hours:
@@ -52,13 +52,13 @@ class FixedLoadAsset(BaseAsset):
                         return fixed_var[t] == 0
                     return fixed_var[t] <= self.fixed_load_profile_kw[t]
 
-                setattr(m, f'fixed_op_{self.asset_id}', Constraint(m.T, rule=operational_rule))
+                setattr(m, f'fixed_op_{self.var_id}', Constraint(m.T, rule=operational_rule))
             else:
                 # Always within profile
                 def profile_rule(m, t):
                     return fixed_var[t] <= self.fixed_load_profile_kw[t]
 
-                setattr(m, f'fixed_profile_{self.asset_id}', Constraint(m.T, rule=profile_rule))
+                setattr(m, f'fixed_profile_{self.var_id}', Constraint(m.T, rule=profile_rule))
 
 
     def register_objectives(self, m):
@@ -67,7 +67,7 @@ class FixedLoadAsset(BaseAsset):
         if not self.is_controllable or self.curtailment_cost_per_kwh <= 0:
             return 0.0
             
-        fixed_var = getattr(m, f'fixed_{self.asset_id}')
+        fixed_var = getattr(m, f'fixed_{self.var_id}')
         
         # Curtailment = (Original Profile - Actual Dispatch)
         # Cost = Curtailment * Cost Rate * delta_t
@@ -79,7 +79,7 @@ class FixedLoadAsset(BaseAsset):
     def get_results(self, m) -> Dict[str, Any]:
         """Extract fixed load results."""
         results = {}
-        fixed_var = getattr(m, f'fixed_{self.asset_id}', None)
+        fixed_var = getattr(m, f'fixed_{self.var_id}', None)
         if fixed_var is not None:
             if hasattr(fixed_var, '__getitem__'):  # It's a Pyomo indexed variable/param
                 # Use pyomo.environ.value() rather than `.value` directly:

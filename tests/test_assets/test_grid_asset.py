@@ -30,21 +30,21 @@ class TestGridAsset:
         grid_asset.register_variables(empty_model)
 
         # Check Variables
-        assert hasattr(empty_model, "p_grid_grid_1")
-        assert hasattr(empty_model, "p_grid_buy_grid_1")
-        assert hasattr(empty_model, "p_grid_sell_grid_1")
+        assert hasattr(empty_model, "p_grid_cust1_grid_1")
+        assert hasattr(empty_model, "p_grid_buy_cust1_grid_1")
+        assert hasattr(empty_model, "p_grid_sell_cust1_grid_1")
 
         # Check Parameters
-        assert hasattr(empty_model, "price_buy_grid_1")
-        assert hasattr(empty_model, "price_sell_grid_1")
-        assert hasattr(empty_model, "import_kw_grid_1")
-        assert hasattr(empty_model, "export_kw_grid_1")
+        assert hasattr(empty_model, "price_buy_cust1_grid_1")
+        assert hasattr(empty_model, "price_sell_cust1_grid_1")
+        assert hasattr(empty_model, "import_kw_cust1_grid_1")
+        assert hasattr(empty_model, "export_kw_cust1_grid_1")
 
         # Verify Parameter Values
-        assert value(empty_model.import_kw_grid_1) == 100.0
-        assert value(empty_model.export_kw_grid_1) == 50.0
-        assert value(empty_model.price_buy_grid_1[0]) == 0.15
-        assert value(empty_model.price_sell_grid_1[2]) == 0.08
+        assert value(empty_model.import_kw_cust1_grid_1) == 100.0
+        assert value(empty_model.export_kw_cust1_grid_1) == 50.0
+        assert value(empty_model.price_buy_cust1_grid_1[0]) == 0.15
+        assert value(empty_model.price_sell_cust1_grid_1[2]) == 0.08
 
     def test_register_constraints(self, grid_asset, empty_model):
         """Test grid constraint registration and bounds."""
@@ -52,18 +52,18 @@ class TestGridAsset:
         grid_asset.register_constraints(empty_model)
 
         # Check constraints exist
-        assert hasattr(empty_model, "grid_split_grid_1")
-        assert hasattr(empty_model, "import_limit_grid_1")
-        assert hasattr(empty_model, "export_limit_grid_1")
+        assert hasattr(empty_model, "grid_split_cust1_grid_1")
+        assert hasattr(empty_model, "import_limit_cust1_grid_1")
+        assert hasattr(empty_model, "export_limit_cust1_grid_1")
 
         for t in empty_model.T:
             # Import limit check: p_buy[t] - u_buy[t] * import_limit -<= 0
-            import_c = empty_model.import_limit_grid_1[t]
+            import_c = empty_model.import_limit_cust1_grid_1[t]
             assert value(import_c.upper) == 0.0
             # assert import_c.body
 
             # Export limit check: p_sell[t] - (1 - u_buy[t]) * export_limit <= 0
-            export_c = empty_model.export_limit_grid_1[t]
+            export_c = empty_model.export_limit_cust1_grid_1[t]
             assert value(export_c.upper) == 0.0
 
     def test_grid_split_logic(self, grid_asset, empty_model):
@@ -71,9 +71,9 @@ class TestGridAsset:
         grid_asset.register_variables(empty_model)
         grid_asset.register_constraints(empty_model)
 
-        p_grid = empty_model.p_grid_grid_1
-        p_buy = empty_model.p_grid_buy_grid_1
-        p_sell = empty_model.p_grid_sell_grid_1
+        p_grid = empty_model.p_grid_cust1_grid_1
+        p_buy = empty_model.p_grid_buy_cust1_grid_1
+        p_sell = empty_model.p_grid_sell_cust1_grid_1
 
         t0 = empty_model.T.first()
         
@@ -82,7 +82,7 @@ class TestGridAsset:
         p_sell[t0].value = 0.0
         p_grid[t0].value = 20.0  
         
-        constraint_t0 = empty_model.grid_split_grid_1[t0]
+        constraint_t0 = empty_model.grid_split_cust1_grid_1[t0]
         # Body is (p_grid - p_buy + p_sell), should equal 0
         residual = value(constraint_t0.body) - value(constraint_t0.lower)
         assert abs(residual) < 1e-9
@@ -93,7 +93,7 @@ class TestGridAsset:
         p_sell[t1].value = 15.0
         p_grid[t1].value = -15.0  # Net export is negative
         
-        constraint_t1 = empty_model.grid_split_grid_1[t1]
+        constraint_t1 = empty_model.grid_split_cust1_grid_1[t1]
         residual_t1 = value(constraint_t1.body) - value(constraint_t1.lower)
         assert abs(residual_t1) < 1e-9
 
@@ -101,9 +101,9 @@ class TestGridAsset:
         """Test the grid cost/revenue objective calculation."""
         grid_asset.register_variables(empty_model)
         
-        p_buy = empty_model.p_grid_buy_grid_1
-        p_sell = empty_model.p_grid_sell_grid_1
-        u_buy = empty_model.u_grid_buy_grid_1
+        p_buy = empty_model.p_grid_buy_cust1_grid_1
+        p_sell = empty_model.p_grid_sell_cust1_grid_1
+        u_buy = empty_model.u_grid_buy_cust1_grid_1
         
         # Set dummy values: 
         
@@ -126,7 +126,7 @@ class TestGridAsset:
         grid_asset.register_variables(empty_model)
 
         # Set values for the bidirectional p_grid variable
-        p_grid = empty_model.p_grid_grid_1
+        p_grid = empty_model.p_grid_cust1_grid_1
         for t in empty_model.T:
             # Alternating import and export
             p_grid[t].value = 10.0 if t % 2 == 0 else -5.0
