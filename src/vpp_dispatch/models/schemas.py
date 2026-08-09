@@ -17,6 +17,7 @@ class AssetType(str, Enum):
     FLEX_LOAD = "flex_load"
     FIXED_LOAD = "fixed_load"
     GRID = "grid"
+    GEN = "generator"
 
 class AssetConfig(BaseModel):
     """configuration for a single asset"""
