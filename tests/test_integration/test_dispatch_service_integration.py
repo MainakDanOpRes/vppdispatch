@@ -100,23 +100,23 @@ class TestMultiAssetDispatch:
                 {
                     "asset_id": "flex_1", "asset_type": "flex_load",
                     "is_continuous": True, "p_min_kw": 0, "p_max_kw": 4,
-                    "energy_required_kwh": 6, "time_window": [0, 5],
+                    "is_on_off": False,"is_shiftable": False,"energy_required_kwh": 6, "time_window": [0, 5],
                 },
                 "continuous",
             ),
             (
                 {
                     "asset_id": "flex_1", "asset_type": "flex_load",
-                    "is_on_off": True, "p_on_kw": 3,
-                    "energy_required_kwh": 6, "time_window": [0, 5],
+                    "is_on_off": True, "p_on_kw": 3,"is_continuous": False,
+                    "is_shiftable": False, "energy_required_kwh": 6, "time_window": [0, 5],
                 },
                 "on_off",
             ),
             (
                 {
                     "asset_id": "flex_1", "asset_type": "flex_load",
-                    "is_shiftable": True, "load_profile": [2, 2],
-                    "time_window": [0, 5],
+                    "is_on_off": False, "is_shiftable": True, "load_profile": [2, 2],
+                    "is_continuous": False,"time_window": [0, 5],
                 },
                 "shiftable",
             ),
