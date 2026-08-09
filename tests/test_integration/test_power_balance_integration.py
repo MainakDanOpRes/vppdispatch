@@ -42,7 +42,7 @@ def _solve(assets, ts, T, delta_t=1.0):
 
 
 def _grid_var(model, grid_asset):
-    return getattr(model, f"p_grid_{grid_asset.asset_id}")
+    return getattr(model, f"p_grid_{grid_asset.var_id}")
 
 
 class TestPVBatteryGridIntegration:
@@ -73,8 +73,8 @@ class TestPVBatteryGridIntegration:
         model, results, status = _solve(assets, ts, T)
         assert status["success"] is True
 
-        p_ch = [pyo_value(getattr(model, "p_ch_battery_1")[t]) for t in range(T)]
-        p_dis = [pyo_value(getattr(model, "p_dis_battery_1")[t]) for t in range(T)]
+        p_ch = [pyo_value(getattr(model, "p_ch_c1_battery_1")[t]) for t in range(T)]
+        p_dis = [pyo_value(getattr(model, "p_dis_c1_battery_1")[t]) for t in range(T)]
 
         # Cheapest periods (index 2, 3) should see charging; expensive periods
         # (index 0, 1, 4, 5) should never see net charging outweigh discharge.
@@ -109,10 +109,10 @@ class TestPVBatteryGridIntegration:
         assert status["success"] is True
 
         for t in range(T):
-            pv_t = pyo_value(getattr(model, "pv_pv_1")[t])
-            fixed_t = pyo_value(getattr(model, "fixed_fixed_1")[t])
-            ch_t = pyo_value(getattr(model, "p_ch_battery_1")[t])
-            dis_t = pyo_value(getattr(model, "p_dis_battery_1")[t])
+            pv_t = pyo_value(getattr(model, "pv_c1_pv_1")[t])
+            fixed_t = pyo_value(getattr(model, "fixed_c1_fixed_1")[t])
+            ch_t = pyo_value(getattr(model, "p_ch_c1_battery_1")[t])
+            dis_t = pyo_value(getattr(model, "p_dis_c1_battery_1")[t])
             grid_t = pyo_value(_grid_var(model, grid)[t])
 
             # generation + discharge + grid_import == load + charge (+ grid_export folded into grid_t sign)
@@ -151,7 +151,7 @@ class TestPVBatteryGridIntegration:
         soc_min_kwh = battery.soc_min
         soc_max_kwh = battery.soc_max
         for t in range(T):
-            soc_t = pyo_value(getattr(model, "soc_battery_1")[t])
+            soc_t = pyo_value(getattr(model, "soc_c1_battery_1")[t])
             assert soc_min_kwh - 1e-6 <= soc_t <= soc_max_kwh + 1e-6
 
 
@@ -181,7 +181,7 @@ class TestFlexLoadIntegration:
         model, results, status = _solve(assets, ts, T)
         assert status["success"] is True
 
-        flex_power = [pyo_value(getattr(model, "flex_flex_1")[t]) for t in range(T)]
+        flex_power = [pyo_value(getattr(model, "flex_c1_flex_1")[t]) for t in range(T)]
         total_energy = sum(flex_power) * 1.0  # delta_t = 1.0
         assert total_energy == pytest.approx(6.0, abs=1e-3)
 
@@ -211,7 +211,7 @@ class TestFlexLoadIntegration:
         model, results, status = _solve(assets, ts, T)
         assert status["success"] is True
 
-        flex_power = [pyo_value(getattr(model, "flex_flex_1")[t]) for t in range(T)]
+        flex_power = [pyo_value(getattr(model, "flex_c1_flex_1")[t]) for t in range(T)]
         # When on, power should be exactly p_on_kw (0 otherwise) - never a partial value.
         for p in flex_power:
             assert p == pytest.approx(0.0, abs=1e-4) or p == pytest.approx(3.0, abs=1e-4)
@@ -254,11 +254,11 @@ class TestFullFleetIntegration:
         assert status["solver"] == "highs"
 
         for t in range(T):
-            pv_t = pyo_value(getattr(model, "pv_pv_1")[t])
-            fixed_t = pyo_value(getattr(model, "fixed_fixed_1")[t])
-            flex_t = pyo_value(getattr(model, "flex_flex_1")[t])
-            ch_t = pyo_value(getattr(model, "p_ch_battery_1")[t])
-            dis_t = pyo_value(getattr(model, "p_dis_battery_1")[t])
+            pv_t = pyo_value(getattr(model, "pv_c1_pv_1")[t])
+            fixed_t = pyo_value(getattr(model, "fixed_c1_fixed_1")[t])
+            flex_t = pyo_value(getattr(model, "flex_c1_flex_1")[t])
+            ch_t = pyo_value(getattr(model, "p_ch_c1_battery_1")[t])
+            dis_t = pyo_value(getattr(model, "p_dis_c1_battery_1")[t])
             grid_t = pyo_value(_grid_var(model, grid)[t])
 
             balance = pv_t + dis_t + grid_t - fixed_t - flex_t - ch_t
