@@ -17,15 +17,14 @@ class TestPVAsset:
 
     def test_register_variables(self, pv_asset, empty_model):
         """Test that PV asset registers variable correctly"""
-        from pyomo.environ import value
         
         pv_asset.register_variables(empty_model)
         
-        assert hasattr(empty_model, f"pv_avail_{pv_asset.asset_id}")
-        assert hasattr(empty_model, f"pv_{pv_asset.asset_id}")
+        assert hasattr(empty_model, f"pv_avail_{pv_asset.var_id}")
+        assert hasattr(empty_model, f"pv_{pv_asset.var_id}")
         
         # Get the parameter object dynamically
-        pv_avail_param = getattr(empty_model, f"pv_avail_{pv_asset.asset_id}")
+        pv_avail_param = getattr(empty_model, f"pv_avail_{pv_asset.var_id}")
         
         # check parameter values
         for t in empty_model.T:
@@ -36,12 +35,12 @@ class TestPVAsset:
         pv_asset.register_variables(empty_model)
         pv_asset.register_constraints(empty_model)
         
-        assert hasattr(empty_model, f"pv_limit_{pv_asset.asset_id}")
+        assert hasattr(empty_model, f"pv_limit_{pv_asset.var_id}")
         
         # Get the constraint, variable, and parameter dynamically
-        pv_limit_constraint = getattr(empty_model, f"pv_limit_{pv_asset.asset_id}")
-        pv_var = getattr(empty_model, f"pv_{pv_asset.asset_id}")
-        pv_avail_param = getattr(empty_model, f"pv_avail_{pv_asset.asset_id}")
+        pv_limit_constraint = getattr(empty_model, f"pv_limit_{pv_asset.var_id}")
+        pv_var = getattr(empty_model, f"pv_{pv_asset.var_id}")
+        pv_avail_param = getattr(empty_model, f"pv_avail_{pv_asset.var_id}")
 
         for t in empty_model.T:
             # constraint_expr = pv_limit_constraint[t].expr
@@ -56,7 +55,7 @@ class TestPVAsset:
         pv_asset.register_variables(empty_model)
         
         # Get the variable object dynamically
-        pv_var = getattr(empty_model, f"pv_{pv_asset.asset_id}")
+        pv_var = getattr(empty_model, f"pv_{pv_asset.var_id}")
         
         # Manually set variable values for testing
         for t in empty_model.T:
@@ -65,7 +64,7 @@ class TestPVAsset:
         results = pv_asset.get_results(empty_model)
         
         # Look for the dynamic key instead of "pv"
-        expected_key = f"pv_{pv_asset.asset_id}"
+        expected_key = 'pv_power_kw'
         assert expected_key in results
         assert results[expected_key] == [float(t) * 0.5 for t in empty_model.T]       
 

@@ -57,8 +57,8 @@ class TestFixedLoadAsset:
         )
         load.register_variables(empty_model)
 
-        assert hasattr(empty_model, "fixed_fixed_1")
-        component = getattr(empty_model, "fixed_fixed_1")
+        assert hasattr(empty_model, "fixed_cust1_fixed_1")
+        component = getattr(empty_model, "fixed_cust1_fixed_1")
         assert isinstance(component, Var)
 
     def test_register_variables_noncontrollable_creates_param(self, empty_model):
@@ -73,8 +73,8 @@ class TestFixedLoadAsset:
         )
         load.register_variables(empty_model)
 
-        assert hasattr(empty_model, "fixed_fixed_1")
-        component = getattr(empty_model, "fixed_fixed_1")
+        assert hasattr(empty_model, "fixed_cust1_fixed_1")
+        component = getattr(empty_model, "fixed_cust1_fixed_1")
         assert isinstance(component, Param)
 
         for t in empty_model.T:
@@ -98,10 +98,10 @@ class TestFixedLoadAsset:
         load.register_variables(empty_model)
         load.register_constraints(empty_model)
 
-        assert hasattr(empty_model, "fixed_profile_fixed_1")
-        assert not hasattr(empty_model, "fixed_op_fixed_1")
+        assert hasattr(empty_model, "fixed_profile_cust1_fixed_1")
+        assert not hasattr(empty_model, "fixed_op_cust1_fixed_1")
 
-        profile_constraint = empty_model.fixed_profile_fixed_1
+        profile_constraint = empty_model.fixed_profile_cust1_fixed_1
         for t in empty_model.T:
             constraint = profile_constraint[t]
             # Should be: fixed[t] <= profile[t]
@@ -128,10 +128,10 @@ class TestFixedLoadAsset:
         load.register_variables(empty_model)
         load.register_constraints(empty_model)
 
-        assert hasattr(empty_model, "fixed_op_fixed_1")
-        assert not hasattr(empty_model, "fixed_profile_fixed_1")
+        assert hasattr(empty_model, "fixed_op_cust1_fixed_1")
+        assert not hasattr(empty_model, "fixed_profile_cust1_fixed_1")
 
-        op_constraint = empty_model.fixed_op_fixed_1
+        op_constraint = empty_model.fixed_op_cust1_fixed_1
         for t in empty_model.T:
             constraint = op_constraint[t]
             if t < t_start or t >= t_end:
@@ -160,8 +160,8 @@ class TestFixedLoadAsset:
         load.register_variables(empty_model)
         load.register_constraints(empty_model)
 
-        assert not hasattr(empty_model, "fixed_profile_fixed_1")
-        assert not hasattr(empty_model, "fixed_op_fixed_1")
+        assert not hasattr(empty_model, "fixed_profile_cust1_fixed_1")
+        assert not hasattr(empty_model, "fixed_op_cust1_fixed_1")
 
     # ------------------------------------------------------------------
     # get_results
@@ -179,7 +179,7 @@ class TestFixedLoadAsset:
         load.register_variables(empty_model)
 
         for t in empty_model.T:
-            empty_model.fixed_fixed_1[t].value = float(t) * 0.5
+            empty_model.fixed_cust1_fixed_1[t].value = float(t) * 0.5
 
         results = load.get_results(empty_model)
         assert "fixed_load" in results

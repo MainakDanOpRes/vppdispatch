@@ -41,9 +41,9 @@ class TestFlexLoadAsset:
         flex = FlexLoadAsset("c1", "flex_1", is_continuous=True)
         flex.register_variables(empty_model)
         
-        assert hasattr(empty_model, "flex_flex_1")
-        assert hasattr(empty_model, "u_flex_flex_1")
-        assert hasattr(empty_model, "v_start_flex_1")
+        assert hasattr(empty_model, "flex_c1_flex_1")
+        assert hasattr(empty_model, "u_flex_c1_flex_1")
+        assert hasattr(empty_model, "v_start_c1_flex_1")
 
     def test_register_constraints_continuous(self, empty_model):
         """Test flex load constraint registration for Continuous mode."""
@@ -51,11 +51,11 @@ class TestFlexLoadAsset:
         flex.register_variables(empty_model)
         flex.register_constraints(empty_model)
 
-        assert hasattr(empty_model, "flex_window_flex_1")
-        assert hasattr(empty_model, "flex_startup_flex_1")
-        assert hasattr(empty_model, "flex_min_flex_1")
-        assert hasattr(empty_model, "flex_max_flex_1")
-        assert hasattr(empty_model, "flex_energy_flex_1")
+        assert hasattr(empty_model, "flex_window_c1_flex_1")
+        assert hasattr(empty_model, "flex_startup_c1_flex_1")
+        assert hasattr(empty_model, "flex_min_c1_flex_1")
+        assert hasattr(empty_model, "flex_max_c1_flex_1")
+        assert hasattr(empty_model, "flex_energy_c1_flex_1")
 
     def test_register_constraints_on_off(self, empty_model):
         """Test flex load constraint registration for On/Off mode."""
@@ -63,11 +63,11 @@ class TestFlexLoadAsset:
         flex.register_variables(empty_model)
         flex.register_constraints(empty_model)
 
-        assert hasattr(empty_model, "flex_window_flex_2")
-        assert hasattr(empty_model, "flex_startup_flex_2")
-        assert hasattr(empty_model, "flex_on_power_flex_2")
-        assert hasattr(empty_model, "flex_on_energy_flex_2")
-        assert hasattr(empty_model, "flex_single_act_flex_2")
+        assert hasattr(empty_model, "flex_window_c1_flex_2")
+        assert hasattr(empty_model, "flex_startup_c1_flex_2")
+        assert hasattr(empty_model, "flex_on_power_c1_flex_2")
+        assert hasattr(empty_model, "flex_on_energy_c1_flex_2")
+        assert hasattr(empty_model, "flex_single_act_c1_flex_2")
 
     def test_register_constraints_shiftable(self, empty_model):
         """Test flex load constraint registration for Shiftable mode."""
@@ -80,9 +80,9 @@ class TestFlexLoadAsset:
         flex.register_variables(empty_model)
         flex.register_constraints(empty_model)
 
-        assert hasattr(empty_model, "shift_single_start_flex_3")
-        assert hasattr(empty_model, "shift_window_flex_3")
-        assert hasattr(empty_model, "shift_power_flex_3")
+        assert hasattr(empty_model, "shift_single_start_c1_flex_3")
+        assert hasattr(empty_model, "shift_window_c1_flex_3")
+        assert hasattr(empty_model, "shift_power_c1_flex_3")
 
     def test_time_window_constraint(self, empty_model):
         """Test that flex load binary state is zero outside time window."""
@@ -90,7 +90,7 @@ class TestFlexLoadAsset:
         flex.register_variables(empty_model)
         flex.register_constraints(empty_model)
 
-        window_constraint = empty_model.flex_window_flex_1
+        window_constraint = empty_model.flex_window_c1_flex_1
 
         # For t < t_start or t > t_end, u_flex should be forced to 0
         for t in empty_model.T:
@@ -109,13 +109,13 @@ class TestFlexLoadAsset:
         flex.register_variables(empty_model)
         flex.register_constraints(empty_model)
 
-        energy_constraint = empty_model.flex_energy_flex_1
+        energy_constraint = empty_model.flex_energy_c1_flex_1
         
         # Should be: sum(flex[t] * dt for t in T) == energy_required_kwh
         assert value(energy_constraint.lower) == pytest.approx(flex.energy_required_kwh)
         assert value(energy_constraint.upper) == pytest.approx(flex.energy_required_kwh)
 
-        flex_var = empty_model.flex_flex_1
+        flex_var = empty_model.flex_c1_flex_1
         n_t = len(list(empty_model.T))
         dt = empty_model.delta_t
         per_step = flex.energy_required_kwh / (n_t * dt)
@@ -133,9 +133,9 @@ class TestFlexLoadAsset:
 
         # Mock solver values
         for t in empty_model.T:
-            empty_model.flex_flex_1[t].value = float(t) * 1.5
-            empty_model.u_flex_flex_1[t].value = 1 if t >= 2 else 0
-            empty_model.v_start_flex_1[t].value = 1 if t == 2 else 0
+            empty_model.flex_c1_flex_1[t].value = float(t) * 1.5
+            empty_model.u_flex_c1_flex_1[t].value = 1 if t >= 2 else 0
+            empty_model.v_start_c1_flex_1[t].value = 1 if t == 2 else 0
 
         results = flex.get_results(empty_model)
         

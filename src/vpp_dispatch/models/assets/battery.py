@@ -78,17 +78,19 @@ class BatteryAsset(BaseAsset):
 
         if p_charge_min_kw < 0:
             raise ValueError(
-                f"p_charge_min_kw must be >= 0, but got {p_charge_max_kw}"
+                f"p_charge_min_kw must be >= 0, but got {p_charge_min_kw}"
             )
         
         if p_discharge_min_kw < 0:
             raise ValueError(
-                f"p_discharge_min_kw must be >= 0, but got {p_discharge_max_kw}"
+                f"p_discharge_min_kw must be >= 0, but got {p_discharge_min_kw}"
             )
 
         self.capacity_kwh = capacity_kwh
         self.p_charge_max_kw = p_charge_max_kw
         self.p_discharge_max_kw = p_discharge_max_kw
+        self.p_charge_min_kw = p_charge_min_kw
+        self.p_discharge_min_kw = p_discharge_min_kw
         self.soc_min = soc_min * capacity_kwh
         self.soc_max = soc_max * capacity_kwh
         self.eff_charge = eff_charge
@@ -102,22 +104,24 @@ class BatteryAsset(BaseAsset):
 
     def register_variables(self, m):
         """Register battery variables."""
-        setattr(m, f'p_ch_{self.asset_id}', Var(m.T, within=NonNegativeReals))
-        setattr(m, f'p_dis_{self.asset_id}', Var(m.T, within=NonNegativeReals))
-        setattr(m, f'u_{self.asset_id}', Var(m.T, within=Binary))
-        setattr(m, f'soc_{self.asset_id}', Var(m.T, within=NonNegativeReals))
+        setattr(m, f'p_ch_{self.var_id}', Var(m.T, within=NonNegativeReals))
+        setattr(m, f'p_dis_{self.var_id}', Var(m.T, within=NonNegativeReals))
+        setattr(m, f'u_{self.var_id}', Var(m.T, within=Binary))
+        setattr(m, f'soc_{self.var_id}', Var(m.T, within=NonNegativeReals))
 
     def register_constraints(self, m):
         """Register battery constraints."""
-        p_ch = getattr(m, f'p_ch_{self.asset_id}')
-        p_dis = getattr(m, f'p_dis_{self.asset_id}')
-        u = getattr(m, f'u_{self.asset_id}')
-        soc = getattr(m, f'soc_{self.asset_id}')
+        p_ch = getattr(m, f'p_ch_{self.var_id}')
+        p_dis = getattr(m, f'p_dis_{self.var_id}')
+        u = getattr(m, f'u_{self.var_id}')
+        soc = getattr(m, f'soc_{self.var_id}')
 
         def soc_lo(m, t): return soc[t] >= self.soc_min
         def soc_hi(m, t): return soc[t] <= self.soc_max
         def charge_ub(m, t): return p_ch[t] <= self.p_charge_max_kw * u[t]
         def disch_ub(m, t): return p_dis[t] <= self.p_discharge_max_kw * (1 - u[t])
+        def charge_lb(m, t): return p_ch[t] >= self.p_charge_min_kw * u[t]
+        def disch_lb(m, t): return p_dis[t] >= self.p_discharge_min_kw * (1 - u[t])
 
         def soc_rule(m, t):
             if t == m.T.first():
@@ -130,11 +134,13 @@ class BatteryAsset(BaseAsset):
                 - (1 / self.eff_discharge) * p_dis[t] * m.delta_t
             )
 
-        setattr(m, f'battery_soc_{self.asset_id}', Constraint(m.T, rule=soc_rule))
-        setattr(m, f'c_soc_lo_{self.asset_id}', Constraint(m.T, rule=soc_lo))
-        setattr(m, f'c_soc_hi_{self.asset_id}', Constraint(m.T, rule=soc_hi))
-        setattr(m, f'c_charge_ub_{self.asset_id}', Constraint(m.T, rule=charge_ub))
-        setattr(m, f'c_disch_ub_{self.asset_id}', Constraint(m.T, rule=disch_ub))
+        setattr(m, f'battery_soc_{self.var_id}', Constraint(m.T, rule=soc_rule))
+        setattr(m, f'c_soc_lo_{self.var_id}', Constraint(m.T, rule=soc_lo))
+        setattr(m, f'c_soc_hi_{self.var_id}', Constraint(m.T, rule=soc_hi))
+        setattr(m, f'c_charge_ub_{self.var_id}', Constraint(m.T, rule=charge_ub))
+        setattr(m, f'c_disch_ub_{self.var_id}', Constraint(m.T, rule=disch_ub))
+        setattr(m, f'c_charge_lb_{self.var_id}', Constraint(m.T, rule=charge_lb))
+        setattr(m, f'c_disch_lb_{self.var_id}', Constraint(m.T, rule=disch_lb))
 
     def register_objectives(self, m):
         """
@@ -146,8 +152,8 @@ class BatteryAsset(BaseAsset):
             return 0.0
             
         # Dynamically fetch this specific battery's variables from the Pyomo model
-        p_ch = getattr(m, f'p_ch_{self.asset_id}')
-        p_dis = getattr(m, f'p_dis_{self.asset_id}')
+        p_ch = getattr(m, f'p_ch_{self.var_id}')
+        p_dis = getattr(m, f'p_dis_{self.var_id}')
         
         # Calculate total energy cycled: sum of (Charge Power + Discharge Power) * delta_t
         # Multiply by the degradation cost per kWh
@@ -161,7 +167,7 @@ class BatteryAsset(BaseAsset):
         """Extract battery results."""
         results = {}
         for var_name in ['p_ch', 'p_dis', 'soc']:
-            var = getattr(m, f'{var_name}_{self.asset_id}', None)
+            var = getattr(m, f'{var_name}_{self.var_id}', None)
             if var is not None:
                 results[var_name] = [var[t].value for t in m.T]
         return results

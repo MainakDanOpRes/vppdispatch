@@ -251,7 +251,7 @@ class AssetConfig(BaseModel):
 
 class CustomerConfig(BaseModel):
     """Configuration for a single customer with multiple assets."""
-    customer_id: str = Field(..., description="Unique identifier for the customer")
+    customer_id: str = Field(...,min_length=1, description="Unique identifier for the customer")
     assets: List[AssetConfig] = Field(..., description="List of assets for this customer")
     time_periods: int = Field(..., gt=0, description="Number of time periods")
 
@@ -272,6 +272,13 @@ class CustomerConfig(BaseModel):
         default=None,
         description="Electricity sell prices"
     )
+
+    @field_validator('customer_id')
+    @classmethod
+    def validate_customer_id_not_blank(cls, v):
+        if not v or not v.strip():
+            raise ValueError("customer_id cannot be empty or whitespace")
+        return v
 
     @field_validator('assets')
     @classmethod
@@ -298,7 +305,7 @@ class CustomerConfig(BaseModel):
 
 class LiveCustomerInput(BaseModel):
     """Legacy input schema for backward compatibility."""
-    customer_id: str = Field(..., description="Customer identifier")
+    customer_id: str = Field(...,min_length=1, description="Customer identifier")
     pv_kw: Annotated[List[float], Field(min_length=1, description="PV generation profile")]
     fixed_load_kw: Annotated[List[float], Field(min_length=1, description="Fixed load profile")]
     price_buy: Annotated[List[float], Field(min_length=1, description="Buy price profile")]

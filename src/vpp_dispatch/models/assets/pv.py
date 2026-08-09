@@ -20,18 +20,18 @@ class PVAsset(BaseAsset):
         def pv_init(m, t):
             return self.pv_profile_kw[t]
 
-        setattr(m, f'pv_avail_{self.asset_id}', Param(m.T, initialize=pv_init))
-        setattr(m, f'pv_{self.asset_id}', Var(m.T, domain=NonNegativeReals))
+        setattr(m, f'pv_avail_{self.var_id}', Param(m.T, initialize=pv_init))
+        setattr(m, f'pv_{self.var_id}', Var(m.T, domain=NonNegativeReals))
 
     def register_constraints(self, m):
         """Register PV constraints."""
-        pv_avail = getattr(m, f'pv_avail_{self.asset_id}')
-        pv_var = getattr(m, f'pv_{self.asset_id}')
+        pv_avail = getattr(m, f'pv_avail_{self.var_id}')
+        pv_var = getattr(m, f'pv_{self.var_id}')
 
         def pv_limit_rule(m, t):
             return pv_var[t] <= pv_avail[t]
 
-        setattr(m, f'pv_limit_{self.asset_id}', Constraint(m.T, rule=pv_limit_rule))
+        setattr(m, f'pv_limit_{self.var_id}', Constraint(m.T, rule=pv_limit_rule))
 
     def register_objectives(self, m):
         """
@@ -43,9 +43,9 @@ class PVAsset(BaseAsset):
     def get_results(self, m) -> Dict[str, Any]:
         """Extract PV results."""
         results = {}
-        pv_var = getattr(m, f'pv_{self.asset_id}', None)
+        pv_var = getattr(m, f'pv_{self.var_id}', None)
         if pv_var is not None:
-            results[f'pv_{self.asset_id}'] = [pv_var[t].value for t in m.T]
+            results['pv_power_kw'] = [pv_var[t].value for t in m.T]
         return results
 
     def to_dict(self) -> Dict[str, Any]:
