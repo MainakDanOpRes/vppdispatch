@@ -97,7 +97,7 @@ class AssetConfig(BaseModel):
     # but were never declared on this schema, so creating any FLEX_LOAD asset via
     # the API would raise AttributeError. Declaring them here fixes that.
     is_continuous: Optional[bool] = Field(
-        default=None,
+        default=True,
         description=(
             "Continuous flexible load mode: power can vary between p_min_kw and p_max_kw. "
             "Leave unset to auto-select: continuous unless is_shiftable or is_on_off is True."
