@@ -194,6 +194,42 @@ class AssetConfig(BaseModel):
         description="Electricity sell prices for the grid asset"
     )
 
+    # Generator Specific
+    p_max_kw: Optional[float] = Field(
+        default = None, 
+        description = "maximum power produced by generator while operating"
+    )
+    p_min_kw: Optional[float] = Field(
+        default = None, 
+        description = "minimum power produced by generator while operating"
+    )
+    min_up_time: Optional[int] = Field(
+        default = None, 
+        description = "minimum up time for the generator"
+    )
+    min_dowm_time: Optional[int] = Field(
+        default = None, 
+        description = "minimum down time for the generator"
+    )
+    ramp_rate: Optional[float] = Field(
+        default = None, 
+        description = "generator ramp rate"
+    )
+
+    marginal_cost_per_kw = Optional[float] = Field(
+        default=0.0,
+        description="marginal cost for generator operations"
+    )
+
+    start_up_cost = Optional[float] = Field(
+        default=0.0,
+        description="start up cost for generator operations"
+    )
+
+    shut_down_cost = Optional[float] = Field(
+        default=0.0,
+        description="shutdown cost for generator operations"
+    )
 
     # ============================================================================
     # Validation: Ensure required parameters for each asset type are provided
@@ -240,7 +276,18 @@ class AssetConfig(BaseModel):
         elif self.asset_type == AssetType.FIXED_LOAD:
             if self.fixed_load_profile_kw is None:
                 raise ValueError("fixed_load_profile_kw is required for Fixed Load assets")
-
+        elif self.asset_type == AssetType.GEN:
+            if self.p_max_kw is None:
+                raise ValueError("p_min_kw is required for Generator assets")
+            if self.p_min_kw is None:
+                raise ValueError("p_min_kw is required for Generator assets")
+            if self.min_up_time is None:
+                raise ValueError("min_up_time is required for Generator assets")
+            if self.min_down_time is None:
+                raise ValueError("min_down_time is required for Generator assets")
+            if self.ramp_rate is None:
+                raise ValueError("ramp_rate is required for Generator assets")
+            
         # NOTE: Grid assets intentionally have no required-field check here.
         # asset_factory.py defaults price_buy/price_sell to [] when omitted, and
         # dispatch_service.run_multi_asset_dispatch() backfills them from the

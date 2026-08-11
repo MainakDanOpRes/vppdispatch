@@ -8,7 +8,8 @@ import logging
 
 from ..models.assets import (
     PVAsset, BatteryAsset, FlexLoadAsset,
-    FixedLoadAsset, GridAsset, BaseAsset
+    FixedLoadAsset, GridAsset, BaseAsset,
+    GeneratorAsset
 )
 from ..models.schemas import AssetConfig, AssetType
 
@@ -124,6 +125,21 @@ def create_asset_from_config(
                 export_max_kw=asset_config.export_max_kw or 100.0,
                 price_buy=asset_config.price_buy or [],
                 price_sell=asset_config.price_sell or [],
+                objective_weight=asset_config.objective_weight or 1.0
+            )
+
+        elif asset_type == AssetType.GEN:
+            return GeneratorAsset(
+                customer_id=customer_id, 
+                asset_id=asset_config.asset_id,
+                p_max_kw=asset_config.p_max_kw, 
+                p_min_kw=asset_config.p_min_kw, 
+                min_up_time=asset_config.min_up_time,
+                min_down_time=asset_config.min_dowm_time, 
+                ramp_rate=asset_config.ramp_rate, 
+                marginal_cost_per_kw=asset_config.marginal_cost_per_kw or 0.0, 
+                start_up_cost=asset_config.start_up_cost or 0.0,
+                shut_down_cost=asset_config.shut_down_cost or 0.0, 
                 objective_weight=asset_config.objective_weight or 1.0
             )
 
