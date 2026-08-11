@@ -5,7 +5,7 @@ import numpy as np
 from pyomo.environ import ConcreteModel, RangeSet
 from src.vpp_dispatch.models.timeseries import CustomerTimeSeries
 from src.vpp_dispatch.models.schemas import CustomerConfig, AssetConfig, AssetType
-from src.vpp_dispatch.models.assets import PVAsset, BatteryAsset, FlexLoadAsset, GridAsset
+from src.vpp_dispatch.models.assets import PVAsset, BatteryAsset, FlexLoadAsset, GridAsset, GeneratorAsset
 from src.vpp_dispatch.models.constraints.power_balance import PowerBalanceConstraint
 from src.vpp_dispatch.models.objectives.cost_minimisation import CostObjective
 from src.vpp_dispatch.optimisation.model_builder import ModelBuilder
@@ -139,11 +139,28 @@ def grid_asset():
         price_sell=[0.05, 0.05, 0.08, 0.08, 0.07],
         objective_weight=1.0
     )
-
 @pytest.fixture
-def assets(pv_asset, battery_asset, flex_load_asset, grid_asset):
+def generator_asset():
+    """Create a default GeneratorAsset for testing."""
+    return GeneratorAsset(
+        customer_id="cust1",
+        asset_id="gen_1",
+        p_max_kw=50.0,
+        p_min_kw=10.0,
+        ramp_rate=25.0,
+        min_up_time=2,
+        min_down_time=2,
+        marginal_cost_per_kw=0.05,
+        start_up_cost=10.0,
+        shut_down_cost=5.0,
+        objective_weight=1.0
+    )
+@pytest.fixture
+def assets(pv_asset, battery_asset, flex_load_asset, grid_asset,
+           generator_asset):
     """List of sample assets."""
-    return [pv_asset, battery_asset, flex_load_asset, grid_asset]
+    return [pv_asset, battery_asset, flex_load_asset, grid_asset, 
+            generator_asset]
 
 # ============================================================================
 # SCHEMA FIXTURES
