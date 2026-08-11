@@ -216,17 +216,17 @@ class AssetConfig(BaseModel):
         description = "generator ramp rate"
     )
 
-    marginal_cost_per_kw = Optional[float] = Field(
+    marginal_cost_per_kw: Optional[float] = Field(
         default=0.0,
         description="marginal cost for generator operations"
     )
 
-    start_up_cost = Optional[float] = Field(
+    start_up_cost: Optional[float] = Field(
         default=0.0,
         description="start up cost for generator operations"
     )
 
-    shut_down_cost = Optional[float] = Field(
+    shut_down_cost: Optional[float] = Field(
         default=0.0,
         description="shutdown cost for generator operations"
     )
