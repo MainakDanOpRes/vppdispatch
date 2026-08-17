@@ -10,7 +10,7 @@ from datetime import datetime
 
 from ..models.timeseries import CustomerTimeSeries
 from ..models.schemas import CustomerConfig, AssetConfig, AssetType, LiveCustomerInput
-from ..models.assets import PVAsset, BatteryAsset, FlexLoadAsset, FixedLoadAsset, GridAsset, BaseAsset
+from ..models.assets import PVAsset, BatteryAsset, FlexLoadAsset, FixedLoadAsset, GridAsset, BaseAsset, GeneratorAsset
 from ..models.constraints.power_balance import PowerBalanceConstraint
 from ..models.objectives.cost_minimisation import CostObjective
 from ..optimisation.model_builder import ModelBuilder
@@ -32,7 +32,7 @@ def run_single_customer_dispatch(
     Run optimization for a single customer with DEFAULT asset configuration.
 
     This is the legacy function for backward compatibility with existing integrations.
-    Creates default assets (PV, Battery, FlexLoad, Grid) and runs optimization.
+    Creates default assets (PV, Battery, FixedLoad, Grid) and runs optimization.
 
     Args:
         customer_id: Customer identifier
@@ -100,6 +100,14 @@ def run_single_customer_dispatch(
     )
     assets.append(grid)
 
+    fixed_load = FixedLoadAsset(
+        customer_id=customer_id,
+        asset_id="fixed_1",
+        fixed_load_profile_kw=ts.fixed_load_kw,
+        objective_weight=1.0
+    )
+    assets.append(fixed_load)
+
     # Create constraints and objective
     pb = PowerBalanceConstraint(ts_data=ts, assets=assets)
     obj = CostObjective(assets=assets, include_asset_costs=True)
@@ -138,7 +146,7 @@ def _extract_legacy_results(
         grid_assets = [a for a in assets if isinstance(a, GridAsset)]
         if grid_assets:
             grid = grid_assets[0]
-            p_grid_var = getattr(model, f'p_grid_{grid.asset_id}', None)
+            p_grid_var = getattr(model, f'p_grid_{grid.var_id}', None)
             if p_grid_var is not None:
                 results["p_grid"] = [value(p_grid_var[t]) for t in model.T]
 
@@ -146,21 +154,21 @@ def _extract_legacy_results(
         battery_assets = [a for a in assets if isinstance(a, BatteryAsset)]
         if battery_assets:
             battery = battery_assets[0]
-            results["p_ch"] = [value(getattr(model, f'p_ch_{battery.asset_id}', [0.0]*T)[t]) for t in model.T]
-            results["p_dis"] = [value(getattr(model, f'p_dis_{battery.asset_id}', [0.0]*T)[t]) for t in model.T]
-            results["soc"] = [value(getattr(model, f'soc_{battery.asset_id}', [5.0]*T)[t]) for t in model.T]
+            results["p_ch"] = [value(getattr(model, f'p_ch_{battery.var_id}', [0.0]*T)[t]) for t in model.T]
+            results["p_dis"] = [value(getattr(model, f'p_dis_{battery.var_id}', [0.0]*T)[t]) for t in model.T]
+            results["soc"] = [value(getattr(model, f'soc_{battery.var_id}', [5.0]*T)[t]) for t in model.T]
 
         # Extract flex load
         flex_assets = [a for a in assets if isinstance(a, FlexLoadAsset)]
         if flex_assets:
             flex = flex_assets[0]
-            results["flex_ev"] = [value(getattr(model, f'flex_{flex.asset_id}', [0.0]*T)[t]) for t in model.T]
+            results["flex_ev"] = [value(getattr(model, f'flex_{flex.var_id}', [0.0]*T)[t]) for t in model.T]
 
         # Extract PV
         pv_assets = [a for a in assets if isinstance(a, PVAsset)]
         if pv_assets:
             pv = pv_assets[0]
-            results["pv_1"] = [value(getattr(model, f'pv_{pv.asset_id}', [0.0]*T)[t]) for t in model.T]
+            results["pv_1"] = [value(getattr(model, f'pv_{pv.var_id}', [0.0]*T)[t]) for t in model.T]
 
         # Extract objective
         if hasattr(model, 'total_cost'):
@@ -418,7 +426,7 @@ def _extract_results_from_model(
     grid_assets = [a for a in assets if isinstance(a, GridAsset)]
     if grid_assets:
         grid = grid_assets[0]  # Use first grid asset for backward compatibility
-        p_grid_var = getattr(model, f'p_grid_{grid.asset_id}', None)
+        p_grid_var = getattr(model, f'p_grid_{grid.var_id}', None)
         if p_grid_var is not None:
             results['p_grid'] = [value(p_grid_var[t]) for t in model.T]
         else:

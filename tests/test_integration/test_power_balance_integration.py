@@ -20,6 +20,7 @@ from src.vpp_dispatch.models.assets import (
     FlexLoadAsset,
     FixedLoadAsset,
     GridAsset,
+    GeneratorAsset
 )
 from src.vpp_dispatch.models.constraints.power_balance import PowerBalanceConstraint
 from src.vpp_dispatch.models.objectives.cost_minimisation import CostObjective
@@ -103,7 +104,13 @@ class TestPVBatteryGridIntegration:
             import_max_kw=50, export_max_kw=50,
             price_buy=ts.price_buy, price_sell=ts.price_sell,
         )
-        assets = [pv, battery, fixed, grid]
+        generator = GeneratorAsset(
+            customer_id="c1", asset_id="gen_1",
+            p_min_kw=0, p_max_kw=50, ramp_rate=20,
+            min_up_time=3, min_down_time=3,
+            marginal_cost_per_kw=1
+        )
+        assets = [pv, battery, fixed, grid, generator]
 
         model, results, status = _solve(assets, ts, T)
         assert status["success"] is True
@@ -113,10 +120,11 @@ class TestPVBatteryGridIntegration:
             fixed_t = pyo_value(getattr(model, "fixed_c1_fixed_1")[t])
             ch_t = pyo_value(getattr(model, "p_ch_c1_battery_1")[t])
             dis_t = pyo_value(getattr(model, "p_dis_c1_battery_1")[t])
-            grid_t = pyo_value(_grid_var(model, grid)[t])
+            grid_t = pyo_value(getattr(model, "p_grid_c1_grid_1")[t])
+            gen_t = pyo_value(getattr(model, "p_gen_c1_gen_1")[t])
 
             # generation + discharge + grid_import == load + charge (+ grid_export folded into grid_t sign)
-            balance = pv_t + dis_t + grid_t - fixed_t - ch_t
+            balance = pv_t + gen_t + dis_t + grid_t - fixed_t - ch_t
             assert abs(balance) < 1e-4, f"Power balance violated at t={t}: {balance}"
 
     def test_battery_soc_stays_within_bounds(self):

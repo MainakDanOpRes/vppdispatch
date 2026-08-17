@@ -57,7 +57,7 @@ class TestGridAsset:
         assert hasattr(empty_model, "export_limit_cust1_grid_1")
 
         for t in empty_model.T:
-            # Import limit check: p_buy[t] - u_buy[t] * import_limit -<= 0
+            # Import limit check: p_buy[t] - u_buy[t] * import_limit <= 0
             import_c = empty_model.import_limit_cust1_grid_1[t]
             assert value(import_c.upper) == 0.0
             # assert import_c.body

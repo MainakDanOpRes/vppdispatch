@@ -5,6 +5,7 @@ Encapsulates customer-specific optimization logic and constraints.
 
 from typing import Dict, Any, List, Optional, Tuple
 import logging
+from pyomo.environ import value
 
 from ..models.timeseries import CustomerTimeSeries
 from ..models.schemas import CustomerConfig, AssetConfig
@@ -221,7 +222,7 @@ class CustomerModel:
         grid_assets = [a for a in self.assets if isinstance(a, GridAsset)]
         if grid_assets:
             grid = grid_assets[0]
-            p_grid_var = getattr(self.model, f'p_grid_{grid.asset_id}', None)
+            p_grid_var = getattr(self.model, f'p_grid_{grid.var_id}', None)
             if p_grid_var is not None:
                 results['p_grid'] = [value(p_grid_var[t]) for t in self.model.T]
             else:

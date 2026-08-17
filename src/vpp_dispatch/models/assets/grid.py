@@ -38,8 +38,8 @@ class GridAsset(BaseAsset):
         setattr(m, f'price_sell_{self.var_id}', Param(m.T, initialize=lambda m, t: self.price_sell[t]))
 
         # Import and export bounds as parameters
-        setattr(m, f'import_kw_{self.var_id}', Param(initialize=self.import_max_kw))
-        setattr(m, f'export_kw_{self.var_id}', Param(initialize=self.export_max_kw))
+        setattr(m, f'import_kw_max_{self.var_id}', Param(initialize=self.import_max_kw))
+        setattr(m, f'export_kw_max_{self.var_id}', Param(initialize=self.export_max_kw))
 
     def register_constraints(self, m):
         """Register grid constraints."""
@@ -50,8 +50,8 @@ class GridAsset(BaseAsset):
         u_buy = getattr(m, f'u_grid_buy_{self.var_id}')
         
         # Fetch bound parameters
-        import_limit = getattr(m, f'import_kw_{self.var_id}')
-        export_limit = getattr(m, f'export_kw_{self.var_id}')
+        import_limit = getattr(m, f'import_kw_max_{self.var_id}')
+        export_limit = getattr(m, f'export_kw_max_{self.var_id}')
 
         # 1. Grid Split Rule: p_grid = import - export
         def grid_split_rule(m, t):
