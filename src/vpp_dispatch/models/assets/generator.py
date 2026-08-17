@@ -36,15 +36,17 @@ class GeneratorAsset(BaseAsset):
                 f"cost coefficients must be non negative for generator {self.var_id}"
             )
 
-        if min_up_time <= 0:
-            raise ValueError(
-                f"invalid min_up_time for generator {self.var_id}"
-            )
+        if min_up_time is not None:
+            if min_up_time <= 0:
+                raise ValueError(
+                    f"invalid min_up_time for generator {self.var_id}"
+                )
 
-        if min_down_time <= 0:
-            raise ValueError(
-                f"invalid min_down_time for generator {self.var_id}"
-            )
+        if min_down_time is not None:
+            if min_down_time <= 0:
+                raise ValueError(
+                    f"invalid min_down_time for generator {self.var_id}"
+                )
 
         self.p_max_kw = p_max_kw
         self.p_min_kw = p_min_kw
